@@ -199,14 +199,19 @@ def test_trace_filters_files_to_matched_links(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["metadata"]["total_files"] == 1
-    assert payload["metadata"]["files_with_frontmatter"] == 1
+    assert payload["metadata"]["total_files"] == 2
+    assert payload["metadata"]["files_with_frontmatter"] == 2
     assert payload["metadata"]["files_without_frontmatter"] == 0
     assert payload["metadata"]["errors"] == 0
-    assert len(payload["files"]) == 1
-    assert payload["files"][0]["file_path"].endswith("about.md")
-    assert payload["files"][0]["frontmatter"] == {"title": "About", "tags": ["info"]}
+    assert len(payload["files"]) == 2
+    file_names = {f["file_path"].split("/")[-1] for f in payload["files"]}
+    assert file_names == {"home.md", "about.md"}
+    assert payload["files"][0]["file_path"].endswith("home.md")
+    assert payload["files"][0]["frontmatter"] == {"title": "Home", "tags": ["index"]}
     assert payload["files"][0]["status"] == "ok"
+    assert payload["files"][1]["file_path"].endswith("about.md")
+    assert payload["files"][1]["frontmatter"] == {"title": "About", "tags": ["info"]}
+    assert payload["files"][1]["status"] == "ok"
     assert len(payload["matched_links"]) == 1
     assert payload["matched_links"][0].endswith("about.md")
 
@@ -221,13 +226,13 @@ def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["metadata"]["total_files"] == 3
-    assert payload["metadata"]["files_with_frontmatter"] == 3
+    assert payload["metadata"]["total_files"] == 4
+    assert payload["metadata"]["files_with_frontmatter"] == 4
     assert payload["metadata"]["files_without_frontmatter"] == 0
     assert payload["metadata"]["errors"] == 0
-    assert len(payload["files"]) == 3
+    assert len(payload["files"]) == 4
     file_names = {f["file_path"].split("/")[-1] for f in payload["files"]}
-    assert file_names == {"projects.md", "tasks.md", "diagram.md"}
+    assert file_names == {"about.md", "projects.md", "tasks.md", "diagram.md"}
     assert len(payload["matched_links"]) == 3
 
 

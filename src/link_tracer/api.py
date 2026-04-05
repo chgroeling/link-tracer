@@ -70,6 +70,13 @@ def trace_links(
     matched_set = {str(p) for p in matched_files}
     filtered_files = [f for f in result.files if str(f.file_path) in matched_set]
 
+    source_entry = next(
+        (f for f in result.files if str(vault_root / f.file_path) == str(note_path)),
+        None,
+    )
+    if source_entry and source_entry not in filtered_files:
+        filtered_files = [source_entry, *filtered_files]
+
     total = len(filtered_files)
     with_fm = sum(1 for f in filtered_files if f.frontmatter)
     without_fm = total - with_fm
