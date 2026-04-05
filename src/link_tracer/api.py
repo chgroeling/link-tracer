@@ -18,18 +18,18 @@ from link_tracer.models import (
 _POSSIBLE_EXTENSIONS = (".md", ".MD", ".markdown")
 
 
-def _resolve_link_to_file(link_target: str, vault_files: list[Path]) -> Path | None:
+def _resolve_link_to_file(link_path: Path, vault_files: list[Path]) -> Path | None:
     """Resolve a file-like link target to a scanned vault file.
 
     Args:
-        link_target: Link target from obsilink (target only, no heading/block)
+        link_path: Link target as Path from obsilink (target only, no heading/block)
         vault_files: List of file paths from matterify scan
 
     Returns:
         Matching file path or None
     """
-    target_str = link_target.strip()
-    target_path = Path(target_str)
+    target_str = str(link_path).strip()
+    target_path = link_path
 
     if not target_str:
         return None
@@ -68,15 +68,15 @@ def trace_links(
 
     matched_files = []
     for link in file_links:
-        matched = _resolve_link_to_file(link.target, vault_files)
+        matched = _resolve_link_to_file(link.as_path, vault_files)
         if matched:
             matched_files.append(matched)
 
-    matched_set = {str(p) for p in matched_files}
-    filtered_files = [f for f in result.files if str(f.file_path) in matched_set]
+    matched_parts = {p.parts for p in matched_files}
+    filtered_files = [f for f in result.files if Path(f.file_path).parts in matched_parts]
 
     source_entry = next(
-        (f for f in result.files if str(vault_root / f.file_path) == str(note_path)),
+        (f for f in result.files if (vault_root / f.file_path).parts == note_path.parts),
         None,
     )
     if source_entry and source_entry not in filtered_files:
