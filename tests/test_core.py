@@ -24,7 +24,7 @@ def test_cli_prints_stub_payload(tmp_path: Path) -> None:
     note.write_text("# Demo\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(tmp_path)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(tmp_path)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -43,15 +43,15 @@ def test_cli_help_exits_cleanly() -> None:
     assert "Trace Obsidian note links" in result.output
 
 
-def test_cli_uses_vault_dir_option(tmp_path: Path) -> None:
-    """--vault-dir option overrides all other sources."""
+def test_cli_uses_vault_root_option(tmp_path: Path) -> None:
+    """--vault-root option overrides all other sources."""
     note = tmp_path / "note.md"
     note.write_text("# Demo\n", encoding="utf-8")
     vault = tmp_path / "vault"
     vault.mkdir()
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -59,8 +59,8 @@ def test_cli_uses_vault_dir_option(tmp_path: Path) -> None:
 
 
 def test_cli_uses_dotenv_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """.vault file overrides VAULT_DIR env var."""
-    monkeypatch.setenv("VAULT_DIR", str(tmp_path / "wrong"))
+    """.vault file overrides VAULT_ROOT env var."""
+    monkeypatch.setenv("VAULT_ROOT", str(tmp_path / "wrong"))
 
     project = tmp_path / "project"
     project.mkdir()
@@ -68,7 +68,7 @@ def test_cli_uses_dotenv_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     vault.mkdir()
     note = project / "note.md"
     note.write_text("# Demo\n", encoding="utf-8")
-    (project / ".vault").write_text(f"VAULT_DIR={vault}\n", encoding="utf-8")
+    (project / ".vault").write_text(f"VAULT_ROOT={vault}\n", encoding="utf-8")
 
     monkeypatch.chdir(project)
     runner = CliRunner()
@@ -87,7 +87,7 @@ def test_cli_dotenv_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     vault.mkdir()
     note = project / "note.md"
     note.write_text("# Demo\n", encoding="utf-8")
-    (project / ".vault").write_text("VAULT_DIR=../vault\n", encoding="utf-8")
+    (project / ".vault").write_text("VAULT_ROOT=../vault\n", encoding="utf-8")
 
     monkeypatch.chdir(project)
     runner = CliRunner()
@@ -99,12 +99,12 @@ def test_cli_dotenv_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 
 
 def test_cli_uses_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """VAULT_DIR env var works when no .vault or --vault-dir."""
+    """VAULT_ROOT env var works when no .vault or --vault-root."""
     vault = tmp_path / "vault"
     vault.mkdir()
     note = tmp_path / "note.md"
     note.write_text("# Demo\n", encoding="utf-8")
-    monkeypatch.setenv("VAULT_DIR", str(vault))
+    monkeypatch.setenv("VAULT_ROOT", str(vault))
 
     runner = CliRunner()
     result = runner.invoke(main, [str(note)], catch_exceptions=False)
@@ -115,12 +115,12 @@ def test_cli_uses_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
 
 
 def test_cli_env_var_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """VAULT_DIR with relative path resolves from cwd."""
+    """VAULT_ROOT with relative path resolves from cwd."""
     vault = tmp_path / "vault"
     vault.mkdir()
     note = tmp_path / "note.md"
     note.write_text("# Demo\n", encoding="utf-8")
-    monkeypatch.setenv("VAULT_DIR", "vault")
+    monkeypatch.setenv("VAULT_ROOT", "vault")
 
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
@@ -131,14 +131,14 @@ def test_cli_env_var_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert payload["vault_root"] == str(vault)
 
 
-def test_cli_dotenv_without_vault_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """.vault without VAULT_DIR falls through to env var."""
+def test_cli_dotenv_without_vault_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """.vault without VAULT_ROOT falls through to env var."""
     vault = tmp_path / "vault"
     vault.mkdir()
     note = tmp_path / "note.md"
     note.write_text("# Demo\n", encoding="utf-8")
     (tmp_path / ".vault").write_text("OTHER_VAR=some_value\n", encoding="utf-8")
-    monkeypatch.setenv("VAULT_DIR", str(vault))
+    monkeypatch.setenv("VAULT_ROOT", str(vault))
 
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
@@ -149,7 +149,7 @@ def test_cli_dotenv_without_vault_dir(tmp_path: Path, monkeypatch: pytest.Monkey
     assert payload["vault_root"] == str(vault)
 
 
-def test_cli_errors_without_vault_dir(tmp_path: Path) -> None:
+def test_cli_errors_without_vault_root(tmp_path: Path) -> None:
     """Exit with error when no vault directory is provided."""
     note = tmp_path / "note.md"
     note.write_text("# Demo\n", encoding="utf-8")
@@ -158,20 +158,20 @@ def test_cli_errors_without_vault_dir(tmp_path: Path) -> None:
     result = runner.invoke(main, [str(note)])
 
     assert result.exit_code != 0
-    assert "No vault directory provided" in result.output
+    assert "No vault root directory provided" in result.output
 
 
-def test_cli_errors_on_nonexistent_vault_dir(tmp_path: Path) -> None:
-    """Exit with error when vault directory does not exist."""
+def test_cli_errors_on_nonexistent_vault_root(tmp_path: Path) -> None:
+    """Exit with error when vault root directory does not exist."""
     note = tmp_path / "note.md"
     note.write_text("# Demo\n", encoding="utf-8")
     nonexistent = tmp_path / "nonexistent"
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(nonexistent)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(nonexistent)])
 
     assert result.exit_code != 0
-    assert "Vault directory does not exist" in result.output
+    assert "Vault root directory does not exist" in result.output
     assert str(nonexistent) in result.output
 
 
@@ -181,7 +181,7 @@ def test_cli_pretty_print(tmp_path: Path) -> None:
     note.write_text("# Demo\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(tmp_path), "--pretty"])
+    result = runner.invoke(main, [str(note), "--vault-root", str(tmp_path), "--pretty"])
 
     assert result.exit_code == 0
     assert "  " in result.output
@@ -195,7 +195,7 @@ def test_trace_filters_files_to_matched_links(tmp_path: Path) -> None:
     vault = tmp_path / "sample_vault"
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(paths["home.md"]), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(paths["home.md"]), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -217,7 +217,7 @@ def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
     vault = tmp_path / "sample_vault"
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(paths["about.md"]), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(paths["about.md"]), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -240,7 +240,7 @@ def test_trace_links_matches_link_without_extension(tmp_path: Path) -> None:
     (vault / "about.md").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -258,7 +258,7 @@ def test_trace_links_matches_link_with_uppercase_extension(tmp_path: Path) -> No
     (vault / "about.MD").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -275,7 +275,7 @@ def test_trace_links_matches_link_with_markdown_extension(tmp_path: Path) -> Non
     (vault / "about.markdown").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -292,7 +292,7 @@ def test_trace_links_matches_link_with_extension(tmp_path: Path) -> None:
     (vault / "about.md").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -311,7 +311,7 @@ def test_trace_links_matches_heading_reference(tmp_path: Path) -> None:
     )
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -328,7 +328,7 @@ def test_trace_links_matches_block_reference(tmp_path: Path) -> None:
     (vault / "about.md").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-dir", str(vault)])
+    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)

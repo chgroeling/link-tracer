@@ -10,8 +10,8 @@ import structlog
 
 @pytest.fixture(autouse=True)
 def clean_vault_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Remove VAULT_DIR from environment for test isolation."""
-    monkeypatch.delenv("VAULT_DIR", raising=False)
+    """Remove VAULT_ROOT from environment for test isolation."""
+    monkeypatch.delenv("VAULT_ROOT", raising=False)
 
 
 @pytest.fixture(autouse=True)
