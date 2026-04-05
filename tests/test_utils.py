@@ -117,6 +117,30 @@ No internal links here.
 """,
 }
 
+TEST_VAULT_NOTES: dict[str, str] = {
+    "home.md": """\
+---
+title: Home
+---
+# Home
+
+Unqualified link: [[about]].
+Qualified link: [[teams/about]].
+""",
+    "docs/about.md": """\
+---
+title: Docs About
+---
+# Docs About
+""",
+    "teams/about.md": """\
+---
+title: Teams About
+---
+# Teams About
+""",
+}
+
 
 def create_sample_vault(tmp_path: Path) -> dict[str, Path]:
     """Create all 10 sample notes in a temp directory and return paths."""
@@ -125,6 +149,20 @@ def create_sample_vault(tmp_path: Path) -> dict[str, Path]:
     paths: dict[str, Path] = {}
     for name, content in SAMPLE_NOTES.items():
         note_path = vault / name
+        note_path.parent.mkdir(parents=True, exist_ok=True)
+        note_path.write_text(content, encoding="utf-8")
+        paths[name] = note_path
+    return paths
+
+
+def create_test_vault(tmp_path: Path) -> dict[str, Path]:
+    """Create a vault with duplicate filenames in nested directories."""
+    vault = tmp_path / "test_vault"
+    vault.mkdir()
+    paths: dict[str, Path] = {}
+    for name, content in TEST_VAULT_NOTES.items():
+        note_path = vault / name
+        note_path.parent.mkdir(parents=True, exist_ok=True)
         note_path.write_text(content, encoding="utf-8")
         paths[name] = note_path
     return paths

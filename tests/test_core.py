@@ -10,7 +10,7 @@ from click.testing import CliRunner
 
 from link_tracer import __version__
 from link_tracer.cli import main
-from tests.test_utils import create_sample_vault
+from tests.test_utils import create_sample_vault, create_test_vault
 
 
 def test_package_exposes_version() -> None:
@@ -339,3 +339,18 @@ def test_trace_links_matches_block_reference(tmp_path: Path) -> None:
     payload = json.loads(result.output)
     assert len(payload["matched_links"]) == 1
     assert payload["matched_links"][0].endswith("about.md")
+
+
+def test_trace_links_uses_path_component_for_duplicate_names(tmp_path: Path) -> None:
+    """Path-qualified links resolve duplicate filenames in different folders."""
+    paths = create_test_vault(tmp_path)
+    vault = tmp_path / "test_vault"
+
+    runner = CliRunner()
+    result = runner.invoke(main, [str(paths["home.md"]), "--vault-root", str(vault)])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert len(payload["matched_links"]) == 2
+    assert payload["matched_links"][0].endswith("docs/about.md")
+    assert payload["matched_links"][1].endswith("teams/about.md")
