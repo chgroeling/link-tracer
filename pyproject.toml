@@ -98,6 +98,8 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = [
     "S101",  # allow pytest assertions in tests
+    "TC002", # allow runtime imports in tests
+    "TC003", # allow runtime imports in tests
 ]
 
 
