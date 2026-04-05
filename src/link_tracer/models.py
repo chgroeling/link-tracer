@@ -15,6 +15,7 @@ class TraceOptions:
 
     follow_chain: bool = False
     max_depth: int | None = None
+    force_refresh: bool = False
 
 
 @dataclass(frozen=True, slots=True)
