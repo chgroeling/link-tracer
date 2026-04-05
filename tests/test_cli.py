@@ -10,7 +10,7 @@ from click.testing import CliRunner
 
 from link_tracer import __version__
 from link_tracer.cli import main
-from tests.test_utils import create_sample_vault, create_test_vault
+from tests.fixtures import create_sample_vault, create_test_vault
 
 
 def test_package_exposes_version() -> None:

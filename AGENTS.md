@@ -18,7 +18,9 @@ project/
 │   └── models.py
 ├── tests/                                  # Pytest suite
 │   ├── conftest.py
-│   ├── test_core.py
+│   ├── fixtures.py
+│   ├── test_api.py
+│   ├── test_cli.py
 │   └── test_integration.py
 └── docs/                                   # MkDocs source
 ```

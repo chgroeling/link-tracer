@@ -6,7 +6,7 @@ from pathlib import Path
 
 from obsilink import extract_links
 
-from tests.test_utils import create_sample_vault
+from tests.fixtures import create_sample_vault
 
 
 def test_extract_internal_links_from_sample_note(tmp_path: Path) -> None:

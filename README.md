@@ -40,7 +40,11 @@ uv run link-tracer --help
 │       ├── cli.py
 │       └── models.py
 ├── tests/
-│   └── test_core.py
+│   ├── conftest.py
+│   ├── fixtures.py
+│   ├── test_api.py
+│   ├── test_cli.py
+│   └── test_integration.py
 └── docs/
     └── index.md
 ```
