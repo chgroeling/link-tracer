@@ -9,50 +9,18 @@ from matterify import scan_directory
 from obsilink import extract_links
 
 from link_tracer.models import (
-    FileStats,
     ResolvedFile,
     ResolveMetadata,
     ResolveOptions,
     ResolveResponse,
     VaultIndex,
+    _normalize_lookup_key,
 )
 
 if TYPE_CHECKING:
-    from matterify.models import AggregatedResult
+    from matterify.models import AggregatedResult, FileEntry
 
 _POSSIBLE_EXTENSIONS = (".md", ".MD", ".markdown")
-
-
-def _normalize_lookup_key(path: Path) -> str:
-    """Return a case-insensitive normalized lookup key for paths."""
-    return path.as_posix().lstrip("./").lower()
-
-
-def _build_vault_lookups(
-    vault_files: list[Path],
-) -> tuple[dict[str, Path], dict[str, Path], dict[str, Path]]:
-    """Build case-insensitive lookup maps for vault files.
-
-    Args:
-        vault_files: List of file paths from matterify scan.
-
-    Returns:
-        Tuple of `(name_to_file, stem_to_file, relative_path_to_file)` maps.
-    """
-    name_to_file: dict[str, Path] = {}
-    stem_to_file: dict[str, Path] = {}
-    relative_path_to_file: dict[str, Path] = {}
-
-    for file_path in vault_files:
-        name_key = file_path.name.lower()
-        stem_key = file_path.stem.lower()
-        relative_key = _normalize_lookup_key(file_path)
-
-        name_to_file.setdefault(name_key, file_path)
-        stem_to_file.setdefault(stem_key, file_path)
-        relative_path_to_file.setdefault(relative_key, file_path)
-
-    return name_to_file, stem_to_file, relative_path_to_file
 
 
 def _resolve_link_to_file(
@@ -114,17 +82,7 @@ def build_vault_context(  # type: ignore[no-any-unimported]
     Returns:
         VaultIndex with prebuilt lookup maps.
     """
-    vault_files = [Path(f.file_path) for f in scan_result.files]
-    name_to_file, stem_to_file, relative_path_to_file = _build_vault_lookups(vault_files)
-
-    return VaultIndex(
-        vault_root=vault_root,
-        files=scan_result.files,
-        source_directory=str(scan_result.metadata.source_directory),
-        name_to_file=name_to_file,
-        stem_to_file=stem_to_file,
-        relative_path_to_file=relative_path_to_file,
-    )
+    return VaultIndex.from_scan_result(vault_root, scan_result)
 
 
 def scan_vault(vault_root: Path) -> VaultIndex:
@@ -171,46 +129,54 @@ def resolve_links(
     matched_paths = {str(path) for path in matched_files}
     filtered_files = [f for f in vault_index.files if str(f.file_path) in matched_paths]
 
-    source_entry = next(
-        (f for f in vault_index.files if (vault_index.vault_root / Path(f.file_path)) == note_path),
-        None,
-    )
+    resolved_note = note_path.resolve()
+    resolved_vault = vault_index.vault_root.resolve()
+
+    try:
+        source_note = str(resolved_note.relative_to(resolved_vault))
+    except ValueError:
+        source_note = str(resolved_note)
+
+    source_entry: FileEntry | None = None  # type: ignore[no-any-unimported]
+    try:
+        resolved_note.relative_to(resolved_vault)
+    except ValueError:
+        pass
+    else:
+        source_entry = next(
+            (
+                f
+                for f in vault_index.files
+                if (resolved_vault / Path(f.file_path)).resolve() == resolved_note
+            ),
+            None,
+        )
+
     if source_entry and source_entry not in filtered_files:
         filtered_files = [source_entry, *filtered_files]
 
-    total = len(filtered_files)
-    with_fm = sum(1 for f in filtered_files if f.frontmatter)
-    without_fm = total - with_fm
-    errors = sum(1 for f in filtered_files if f.status != "ok")
+    resolved_files = [ResolvedFile.from_file_entry(f) for f in filtered_files]
 
-    resolved_files = [
-        ResolvedFile(
-            file_path=str(f.file_path),
-            frontmatter=f.frontmatter,
-            status=f.status,
-            error=f.error,
-            stats=FileStats(
-                file_size=f.stats.file_size,
-                modified_time=f.stats.modified_time,
-                access_time=f.stats.access_time,
-            )
-            if f.stats
-            else None,
-            file_hash=f.file_hash,
-        )
-        for f in filtered_files
-    ]
+    if source_entry is None:
+        resolved_files = [
+            ResolvedFile(
+                file_path=str(resolved_note),
+                frontmatter={},
+                status="ok",
+                error=None,
+                stats=None,
+                file_hash=None,
+            ),
+            *resolved_files,
+        ]
+
+    metadata = ResolveMetadata.from_files(vault_index.source_directory, resolved_files)
 
     return ResolveResponse(
         vault_root=str(vault_index.vault_root),
+        source_note=source_note,
         options=resolved_options,
-        metadata=ResolveMetadata(
-            source_directory=vault_index.source_directory,
-            total_files=total,
-            files_with_frontmatter=with_fm,
-            files_without_frontmatter=without_fm,
-            errors=errors,
-        ),
+        metadata=metadata,
         files=resolved_files,
         matched_links=[str(p) for p in matched_files],
     )

@@ -7,13 +7,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 from link_tracer.api import (
-    _build_vault_lookups,
     _resolve_link_to_file,
     build_vault_context,
     resolve_links,
     scan_vault,
 )
-from link_tracer.models import VaultIndex
+from link_tracer.models import VaultIndex, _build_vault_lookups
 
 
 @dataclass
