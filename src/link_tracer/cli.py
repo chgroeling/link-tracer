@@ -11,7 +11,7 @@ import click
 import structlog
 from dotenv import dotenv_values, find_dotenv
 
-from link_tracer.api import resolve_links, scan_vault
+from link_tracer.api import resolve_links, resolve_vault_links, scan_vault
 from link_tracer.logging import configure_debug_logging, get_console
 from link_tracer.models import ResolveOptions
 
@@ -52,7 +52,29 @@ def resolve_vault_root(cli_value: Path | None) -> Path:
     )
 
 
-@click.command()
+def emit_json_output(payload: str, output: Path | None) -> None:
+    """Emit JSON payload to stdout or a target file.
+
+    Args:
+        payload: Serialized JSON payload.
+        output: Optional output file path.
+    """
+    if output is None:
+        click.echo(payload)
+        return
+
+    try:
+        output.write_text(f"{payload}\n", encoding="utf-8")
+    except OSError as exc:
+        raise click.ClickException(f"Could not write output file {output}: {exc}") from exc
+
+
+@click.group()
+def main() -> None:
+    """Trace Obsidian note links to filesystem sources."""
+
+
+@main.command("note")
 @click.argument("note", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--vault-root",
@@ -66,16 +88,24 @@ def resolve_vault_root(cli_value: Path | None) -> Path:
     default=1,
     help="Traversal depth (0=source only, 1=direct links, 2+=recursive)",
 )
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path, dir_okay=False),
+    default=None,
+    help="Write JSON output to file instead of stdout",
+)
 @click.option("--debug", is_flag=True, help="Enable debug-level structured logging to stderr")
 @click.option("--verbose", is_flag=True, help="Enable verbose console output")
-def main(
+def trace_note(
     note: Path,
     vault_root: Path | None,
     depth: int,
+    output: Path | None,
     debug: bool,
     verbose: bool,
 ) -> int:
-    """Trace Obsidian note links to filesystem sources."""
+    """Trace links for a single note."""
     configure_debug_logging(debug)
     console = get_console(verbose)
 
@@ -87,9 +117,43 @@ def main(
     logger.info("Tracing links", note=str(note))
     vault_index = scan_vault(vault_root)
     response = resolve_links(note_path=note, vault_index=vault_index, options=options)
-    click.echo(json.dumps(asdict(response), indent=2))
+    payload = json.dumps(asdict(response), indent=2)
+    emit_json_output(payload, output)
     console.print("Link tracing complete")
     logger.info("Link tracing complete")
+    return 0
+
+
+@main.command("vault")
+@click.option(
+    "--vault-root",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Vault root directory (overrides VAULT_ROOT env and .vault file)",
+)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path, dir_okay=False),
+    default=None,
+    help="Write JSON output to file instead of stdout",
+)
+@click.option("--debug", is_flag=True, help="Enable debug-level structured logging to stderr")
+@click.option("--verbose", is_flag=True, help="Enable verbose console output")
+def trace_vault(vault_root: Path | None, output: Path | None, debug: bool, verbose: bool) -> int:
+    """Trace links for every note in the vault."""
+    configure_debug_logging(debug)
+    console = get_console(verbose)
+
+    logger.debug("Starting vault link tracer", vault_root=str(vault_root) if vault_root else None)
+    vault_root = resolve_vault_root(vault_root)
+    logger.info("Tracing vault links", vault_root=str(vault_root))
+    vault_index = scan_vault(vault_root)
+    response = resolve_vault_links(vault_index=vault_index)
+    payload = json.dumps(asdict(response), indent=2)
+    emit_json_output(payload, output)
+    console.print("Vault link tracing complete")
+    logger.info("Vault link tracing complete")
     return 0
 
 

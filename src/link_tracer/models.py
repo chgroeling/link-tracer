@@ -169,6 +169,16 @@ class ResolveResponse:
 
 
 @dataclass(frozen=True, slots=True)
+class ResolveVaultResponse:
+    """Complete result of resolving links for every note in a vault."""
+
+    vault_root: str
+    metadata: ResolveMetadata
+    files: list[ResolvedFile]
+    edges: dict[str, list[LinkEdge]]
+
+
+@dataclass(frozen=True, slots=True)
 class VaultIndex:  # type: ignore[no-any-unimported]
     """Immutable vault index with prebuilt lookup maps."""
 
@@ -197,10 +207,14 @@ class VaultIndex:  # type: ignore[no-any-unimported]
         vault_files = [Path(f.file_path) for f in scan_result.files]
         name_to_file, stem_to_file, relative_path_to_file = _build_vault_lookups(vault_files)
 
+        source_directory = getattr(scan_result.metadata, "source_directory", None)
+        if source_directory is None:
+            source_directory = scan_result.metadata.root
+
         return cls(
             vault_root=vault_root,
             files=scan_result.files,
-            source_directory=str(scan_result.metadata.source_directory),
+            source_directory=str(source_directory),
             name_to_file=name_to_file,
             stem_to_file=stem_to_file,
             relative_path_to_file=relative_path_to_file,

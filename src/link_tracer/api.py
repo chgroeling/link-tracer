@@ -18,6 +18,7 @@ from link_tracer.models import (
     ResolveMetadata,
     ResolveOptions,
     ResolveResponse,
+    ResolveVaultResponse,
     VaultIndex,
     _normalize_lookup_key,
 )
@@ -28,6 +29,72 @@ if TYPE_CHECKING:
     from matterify.models import AggregatedResult, FileEntry
 
 _POSSIBLE_EXTENSIONS = (".md", ".MD", ".markdown")
+_FILE_LINKS_KEY = "file_links"
+
+
+def _extract_file_links_callback(content: str) -> dict[str, object]:
+    """Extract serializable file links from note content.
+
+    Args:
+        content: Markdown note content.
+
+    Returns:
+        Dictionary containing serialized file-like links.
+    """
+    links = extract_links(content)
+    file_links = [
+        {
+            "link_type": link.type.value,
+            "target": link.target,
+            "alias": link.alias,
+            "heading": link.heading,
+            "blockid": link.blockid,
+        }
+        for link in links
+        if link.is_file
+    ]
+    return {_FILE_LINKS_KEY: file_links}
+
+
+def _entry_file_links(entry: FileEntry) -> list[ExtractedLink]:  # type: ignore[no-any-unimported]
+    """Read serialized file links from a scan entry custom_data payload."""
+    custom_data = entry.custom_data
+    if not isinstance(custom_data, dict):
+        return []
+
+    raw_links = custom_data.get(_FILE_LINKS_KEY)
+    if not isinstance(raw_links, list):
+        return []
+
+    links: list[ExtractedLink] = []
+    for raw_link in raw_links:
+        if not isinstance(raw_link, dict):
+            continue
+
+        link_type_raw = raw_link.get("link_type")
+        target_raw = raw_link.get("target")
+        alias_raw = raw_link.get("alias")
+        heading_raw = raw_link.get("heading")
+        blockid_raw = raw_link.get("blockid")
+
+        if not isinstance(link_type_raw, str) or not isinstance(target_raw, str):
+            continue
+
+        alias = alias_raw if isinstance(alias_raw, str) else None
+        heading = heading_raw if isinstance(heading_raw, str) else None
+        blockid = blockid_raw if isinstance(blockid_raw, str) else None
+
+        links.append(
+            ExtractedLink.from_obsilink_link(
+                link_type=link_type_raw,
+                target=target_raw,
+                alias=alias,
+                heading=heading,
+                blockid=blockid,
+            )
+        )
+
+    return links
 
 
 def _path_for_response(path: Path, resolved_vault: Path) -> str:
@@ -124,7 +191,7 @@ def scan_vault(vault_root: Path) -> VaultIndex:
     start = time.monotonic()
     logger.debug("scan_vault.start", vault_root=str(vault_root))
 
-    scan_result = scan_directory(vault_root)
+    scan_result = scan_directory(vault_root, callback=_extract_file_links_callback)
     index = build_vault_index(vault_root, scan_result)
 
     duration = time.monotonic() - start
@@ -326,6 +393,71 @@ def resolve_links(
     duration = time.monotonic() - start
     logger.debug(
         "resolve_links.complete",
+        duration=round(duration, 4),
+        files=len(response.files),
+        edges=len(response.edges),
+    )
+    return response
+
+
+def resolve_vault_links(vault_index: VaultIndex) -> ResolveVaultResponse:
+    """Resolve all file links for every scanned note in a vault.
+
+    Args:
+        vault_index: Prebuilt VaultIndex from scan_vault() or build_vault_index().
+
+    Returns:
+        ResolveVaultResponse with all scanned files and full edge graph.
+    """
+    start = time.monotonic()
+    logger.debug("resolve_vault_links.start", total_files=len(vault_index.files))
+
+    resolved_vault = vault_index.vault_root.resolve()
+    edges: dict[str, list[LinkEdge]] = {}
+
+    for entry in vault_index.files:
+        source_note_path = (resolved_vault / Path(entry.file_path)).resolve()
+        source_note = _path_for_response(source_note_path, resolved_vault)
+        extracted_links = _entry_file_links(entry)
+        outgoing_links: list[LinkEdge] = []
+
+        for extracted_link in extracted_links:
+            matched = _resolve_link_to_file(Path(extracted_link.target), vault_index)
+            if matched is None:
+                outgoing_links.append(
+                    LinkEdge(
+                        link=extracted_link,
+                        resolved=False,
+                        target_note=None,
+                        unresolved_reason="not_found",
+                    )
+                )
+                continue
+
+            resolved_target = (resolved_vault / matched).resolve()
+            outgoing_links.append(
+                LinkEdge(
+                    link=extracted_link,
+                    resolved=True,
+                    target_note=_path_for_response(resolved_target, resolved_vault),
+                )
+            )
+
+        if outgoing_links:
+            edges[source_note] = outgoing_links
+
+    resolved_files = [ResolvedFile.from_file_entry(file_entry) for file_entry in vault_index.files]
+    metadata = ResolveMetadata.from_files(vault_index.source_directory, resolved_files)
+    response = ResolveVaultResponse(
+        vault_root=str(vault_index.vault_root),
+        metadata=metadata,
+        files=resolved_files,
+        edges=edges,
+    )
+
+    duration = time.monotonic() - start
+    logger.debug(
+        "resolve_vault_links.complete",
         duration=round(duration, 4),
         files=len(response.files),
         edges=len(response.edges),

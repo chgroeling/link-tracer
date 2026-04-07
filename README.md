@@ -22,10 +22,11 @@ uv run pytest
 
 ## CLI
 
-The CLI entry point is wired and currently acts as a stub:
+Use subcommands for single-note and vault-wide tracing:
 
 ```bash
-uv run link-tracer --help
+uv run link-tracer note path/to/note.md --vault-root path/to/vault --depth 2
+uv run link-tracer vault --vault-root path/to/vault
 ```
 
 ## Project layout

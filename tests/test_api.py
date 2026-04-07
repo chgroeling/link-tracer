@@ -12,6 +12,7 @@ from link_tracer.api import (
     _resolve_link_to_file,
     build_vault_index,
     resolve_links,
+    resolve_vault_links,
     scan_vault,
 )
 from link_tracer.models import ResolveOptions, VaultIndex, _build_vault_lookups
@@ -135,12 +136,14 @@ def test_scan_vault_delegates_to_scan_directory() -> None:
         files=fake_files,
     )
 
-    with patch("link_tracer.api.scan_directory", return_value=fake_result):
+    with patch("link_tracer.api.scan_directory", return_value=fake_result) as mock_scan:
         vault_index = scan_vault(vault_root)
 
     assert isinstance(vault_index, VaultIndex)
     assert vault_index.vault_root == vault_root
     assert len(vault_index.files) == 1
+    callback = mock_scan.call_args.kwargs.get("callback")
+    assert callable(callback)
 
 
 def test_resolve_links_uses_prebuilt_index() -> None:
@@ -307,3 +310,24 @@ def test_resolve_links_default_depth_is_one() -> None:
     """Default ResolveOptions uses depth=1."""
     options = ResolveOptions()
     assert options.depth == 1
+
+
+def test_resolve_vault_links_resolves_edges_for_every_file(tmp_path: Path) -> None:
+    """resolve_vault_links() builds edges for all notes in the scanned vault."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    (vault_root / "home.md").write_text("---\ntitle: Home\n---\n[[about]]", encoding="utf-8")
+    (vault_root / "about.md").write_text("---\ntitle: About\n---\n[[missing]]", encoding="utf-8")
+    (vault_root / "tasks.md").write_text("---\ntitle: Tasks\n---\nNo links", encoding="utf-8")
+
+    vault_index = scan_vault(vault_root)
+    response = resolve_vault_links(vault_index)
+
+    assert response.vault_root == str(vault_root)
+    assert response.metadata.total_files == 3
+    assert len(response.files) == 3
+    assert set(response.edges) == {"home.md", "about.md"}
+    assert response.edges["home.md"][0].resolved is True
+    assert response.edges["home.md"][0].target_note == "about.md"
+    assert response.edges["about.md"][0].resolved is False
+    assert response.edges["about.md"][0].unresolved_reason == "not_found"

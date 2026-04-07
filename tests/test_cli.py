@@ -24,7 +24,7 @@ def test_cli_prints_stub_payload(tmp_path: Path) -> None:
     note.write_text("# Demo\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(tmp_path)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(tmp_path)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -50,7 +50,7 @@ def test_cli_uses_vault_root_option(tmp_path: Path) -> None:
     vault.mkdir()
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -71,7 +71,7 @@ def test_cli_uses_dotenv_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(main, [str(note)], catch_exceptions=False)
+    result = runner.invoke(main, ["note", str(note)], catch_exceptions=False)
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -90,7 +90,7 @@ def test_cli_dotenv_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 
     monkeypatch.chdir(project)
     runner = CliRunner()
-    result = runner.invoke(main, [str(note)], catch_exceptions=False)
+    result = runner.invoke(main, ["note", str(note)], catch_exceptions=False)
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -106,7 +106,7 @@ def test_cli_uses_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("VAULT_ROOT", str(vault))
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note)], catch_exceptions=False)
+    result = runner.invoke(main, ["note", str(note)], catch_exceptions=False)
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -123,7 +123,7 @@ def test_cli_env_var_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
-    result = runner.invoke(main, [str(note)], catch_exceptions=False)
+    result = runner.invoke(main, ["note", str(note)], catch_exceptions=False)
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -141,7 +141,7 @@ def test_cli_dotenv_without_vault_root(tmp_path: Path, monkeypatch: pytest.Monke
 
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
-    result = runner.invoke(main, [str(note)], catch_exceptions=False)
+    result = runner.invoke(main, ["note", str(note)], catch_exceptions=False)
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -154,7 +154,7 @@ def test_cli_errors_without_vault_root(tmp_path: Path) -> None:
     note.write_text("# Demo\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note)])
+    result = runner.invoke(main, ["note", str(note)])
 
     assert result.exit_code != 0
     assert "No vault root directory provided" in result.output
@@ -167,7 +167,7 @@ def test_cli_errors_on_nonexistent_vault_root(tmp_path: Path) -> None:
     nonexistent = tmp_path / "nonexistent"
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(nonexistent)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(nonexistent)])
 
     assert result.exit_code != 0
     assert "Vault root directory does not exist" in result.output
@@ -180,7 +180,7 @@ def test_cli_pretty_print(tmp_path: Path) -> None:
     note.write_text("# Demo\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(tmp_path)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(tmp_path)])
 
     assert result.exit_code == 0
     assert "  " in result.output
@@ -192,7 +192,7 @@ def test_trace_filters_files_to_matched_links(tmp_path: Path) -> None:
     vault = tmp_path / "sample_vault"
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(paths["home.md"]), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(paths["home.md"]), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -221,7 +221,7 @@ def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
     vault = tmp_path / "sample_vault"
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(paths["about.md"]), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(paths["about.md"]), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -249,7 +249,7 @@ def test_trace_links_matches_link_without_extension(tmp_path: Path) -> None:
     (vault / "about.md").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -267,7 +267,7 @@ def test_trace_links_matches_link_with_uppercase_extension(tmp_path: Path) -> No
     (vault / "about.MD").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -284,7 +284,7 @@ def test_trace_links_matches_link_with_markdown_extension(tmp_path: Path) -> Non
     (vault / "about.markdown").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -301,7 +301,7 @@ def test_trace_links_matches_link_with_extension(tmp_path: Path) -> None:
     (vault / "about.md").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -320,7 +320,7 @@ def test_trace_links_matches_heading_reference(tmp_path: Path) -> None:
     )
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -337,7 +337,7 @@ def test_trace_links_matches_block_reference(tmp_path: Path) -> None:
     (vault / "about.md").write_text("---\ntitle: About\n---\n# About\n", encoding="utf-8")
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(note), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(note), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -351,7 +351,7 @@ def test_trace_links_uses_path_component_for_duplicate_names(tmp_path: Path) -> 
     vault = tmp_path / "test_vault"
 
     runner = CliRunner()
-    result = runner.invoke(main, [str(paths["home.md"]), "--vault-root", str(vault)])
+    result = runner.invoke(main, ["note", str(paths["home.md"]), "--vault-root", str(vault)])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -360,3 +360,66 @@ def test_trace_links_uses_path_component_for_duplicate_names(tmp_path: Path) -> 
         "docs/about.md",
         "teams/about.md",
     ]
+
+
+def test_vault_command_outputs_edges_for_multiple_notes(tmp_path: Path) -> None:
+    """Vault subcommand resolves links across every note in the vault."""
+    create_sample_vault(tmp_path)
+    vault = tmp_path / "sample_vault"
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["vault", "--vault-root", str(vault)])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["vault_root"] == str(vault)
+    assert payload["metadata"]["total_files"] == 10
+    assert len(payload["files"]) == 10
+    assert "home.md" in payload["edges"]
+    assert "about.md" in payload["edges"]
+
+
+def test_vault_command_requires_vault_root() -> None:
+    """Vault subcommand errors when no vault root can be resolved."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["vault"], env={})
+
+    assert result.exit_code != 0
+    assert "No vault root directory provided" in result.output
+
+
+def test_note_command_output_writes_json_file(tmp_path: Path) -> None:
+    """-o/--output writes note JSON payload to a file."""
+    note = tmp_path / "note.md"
+    note.write_text("# Demo\n", encoding="utf-8")
+    output = tmp_path / "note-output.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["note", str(note), "--vault-root", str(tmp_path), "--output", str(output)],
+    )
+
+    assert result.exit_code == 0
+    assert result.output == ""
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["vault_root"] == str(tmp_path)
+
+
+def test_vault_command_output_writes_json_file(tmp_path: Path) -> None:
+    """-o/--output writes vault JSON payload to a file."""
+    create_sample_vault(tmp_path)
+    vault = tmp_path / "sample_vault"
+    output = tmp_path / "vault-output.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["vault", "--vault-root", str(vault), "-o", str(output)],
+    )
+
+    assert result.exit_code == 0
+    assert result.output == ""
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["vault_root"] == str(vault)
+    assert payload["metadata"]["total_files"] == 10

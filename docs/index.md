@@ -5,18 +5,16 @@ back to note files on disk.
 
 ## Scope
 
-The initialized project supports:
+The project supports:
 
 - package import and version metadata
-- a stub CLI entry point (`link-tracer`)
-- typed data models for future trace results
-- a stub API boundary for future implementation
+- CLI subcommands for note-level and vault-level tracing
+- typed data models for trace results
+- API helpers to scan a vault and resolve links
 
-Tracing behavior is not implemented yet.
+## Output contract
 
-## Planned output contract
-
-The project is prepared for a structured trace graph output containing:
+Tracing outputs a structured graph containing:
 
 - visited note nodes
 - link edges between notes
