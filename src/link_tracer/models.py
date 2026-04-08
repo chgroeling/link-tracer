@@ -128,11 +128,10 @@ class ResolveMetadata:
 
 @dataclass(frozen=True, slots=True)
 class VaultGraph:
-    """Vault-wide link graph: files with resolved edges."""
+    """Vault-wide link graph: edges between notes with summary metadata."""
 
     vault_root: str
     metadata: ResolveMetadata
-    files: list[ResolvedFile]
     edges: dict[str, list[LinkEdge]]
 
 

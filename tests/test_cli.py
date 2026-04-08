@@ -30,7 +30,7 @@ def test_cli_prints_stub_payload(tmp_path: Path) -> None:
     payload = json.loads(result.output)
     assert payload["vault_root"] == str(tmp_path)
     assert "metadata" in payload
-    assert "files" in payload
+    assert "edges" in payload
 
 
 def test_cli_help_exits_cleanly() -> None:
@@ -200,12 +200,6 @@ def test_trace_filters_files_to_matched_links(tmp_path: Path) -> None:
     assert payload["metadata"]["files_with_frontmatter"] == 5
     assert payload["metadata"]["files_without_frontmatter"] == 0
     assert payload["metadata"]["errors"] == 0
-    assert len(payload["files"]) == 5
-    file_names = {f["file_path"].split("/")[-1] for f in payload["files"]}
-    assert file_names == {"home.md", "about.md", "tasks.md", "notes.md", "reading_list.md"}
-    assert payload["files"][0]["file_path"].endswith("home.md")
-    assert payload["files"][0]["frontmatter"] == {"title": "Home", "tags": ["index"]}
-    assert payload["files"][0]["status"] == "ok"
     # Forward edge
     assert payload["edges"]["home.md"][0]["target_note"] == "about.md"
     assert payload["edges"]["home.md"][0]["resolved"] is True
@@ -228,16 +222,6 @@ def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
     assert payload["metadata"]["files_with_frontmatter"] == 6
     assert payload["metadata"]["files_without_frontmatter"] == 0
     assert payload["metadata"]["errors"] == 0
-    assert len(payload["files"]) == 6
-    file_names = {f["file_path"].split("/")[-1] for f in payload["files"]}
-    assert file_names == {
-        "about.md",
-        "projects.md",
-        "tasks.md",
-        "diagram.md",
-        "home.md",
-        "notes.md",
-    }
     # Forward edges from about
     assert [edge["target_note"] for edge in payload["edges"]["about.md"]] == [
         "projects.md",
@@ -382,7 +366,6 @@ def test_vault_command_outputs_edges_for_multiple_notes(tmp_path: Path) -> None:
     payload = json.loads(result.output)
     assert payload["vault_root"] == str(vault)
     assert payload["metadata"]["total_files"] == 10
-    assert len(payload["files"]) == 10
     assert "home.md" in payload["edges"]
     assert "about.md" in payload["edges"]
 

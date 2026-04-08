@@ -183,7 +183,6 @@ def resolve_vault_links(vault_index: VaultIndex) -> VaultGraph:
     response = VaultGraph(
         vault_root=str(vault_index.vault_root),
         metadata=metadata,
-        files=resolved_files,
         edges=edges,
     )
 
@@ -191,7 +190,7 @@ def resolve_vault_links(vault_index: VaultIndex) -> VaultGraph:
     logger.debug(
         "resolve_vault_links.complete",
         duration=round(duration, 4),
-        files=len(response.files),
+        files=response.metadata.total_files,
         edges=len(response.edges),
     )
     return response

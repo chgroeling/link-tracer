@@ -117,7 +117,7 @@ def trace_note(
     logger.info("Tracing links", note=str(note))
     vault_index = scan_vault(vault_root)
     vault_graph = resolve_vault_links(vault_index=vault_index)
-    source_note, graph = resolve_links(note_path=note, vault_graph=vault_graph, options=options)
+    source_note, graph = resolve_links(note_path=note, vault_graph=vault_graph, vault_index=vault_index, options=options)
     payload = json.dumps({"source_note": source_note, **asdict(graph)}, indent=2)
     emit_json_output(payload, output)
     console.print("Link tracing complete")

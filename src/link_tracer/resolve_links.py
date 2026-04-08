@@ -14,6 +14,7 @@ from link_tracer.models import (
     ResolveMetadata,
     ResolveOptions,
     VaultGraph,
+    VaultIndex,
 )
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
 
@@ -75,6 +76,7 @@ def _build_reverse_index(
 def resolve_links(
     note_path: Path,
     vault_graph: VaultGraph,
+    vault_index: VaultIndex,
     *,
     options: ResolveOptions | None = None,
 ) -> tuple[str, VaultGraph]:
@@ -87,18 +89,14 @@ def resolve_links(
     resolved_vault = Path(vault_graph.vault_root).resolve()
     source_note = _path_for_response(resolved_note, resolved_vault)
 
-    files_by_key: dict[str, ResolvedFile] = {}
-    for file_entry in vault_graph.files:
-        files_by_key.setdefault(_normalize_lookup_key(Path(file_entry.file_path)), file_entry)
+    name_to_file = vault_index.name_to_file
+    stem_to_file = vault_index.stem_to_file
+    relative_path_to_file = vault_index.relative_path_to_file
 
-    name_to_file: dict[str, Path] = {}
-    stem_to_file: dict[str, Path] = {}
-    relative_path_to_file: dict[str, Path] = {}
-    for file_entry in vault_graph.files:
-        file_path = Path(file_entry.file_path)
-        name_to_file.setdefault(file_path.name.lower(), file_path)
-        stem_to_file.setdefault(file_path.stem.lower(), file_path)
-        relative_path_to_file.setdefault(_normalize_lookup_key(file_path), file_path)
+    files_by_key: dict[str, ResolvedFile] = {
+        _normalize_lookup_key(Path(str(fe.file_path))): ResolvedFile.from_file_entry(fe)
+        for fe in vault_index.files
+    }
 
     source_entry = files_by_key.get(_normalize_lookup_key(Path(source_note)))
 
@@ -115,7 +113,7 @@ def resolve_links(
                 ),
             ]
         else:
-            resolved_files = [ResolvedFile.from_file_entry(source_entry)]
+            resolved_files = [source_entry]
 
         metadata = ResolveMetadata.from_files(
             vault_graph.metadata.source_directory, resolved_files
@@ -123,7 +121,6 @@ def resolve_links(
         graph = VaultGraph(
             vault_root=vault_graph.vault_root,
             metadata=metadata,
-            files=resolved_files,
             edges={},
         )
     else:
@@ -205,9 +202,9 @@ def resolve_links(
 
         matched_paths = {_normalize_lookup_key(Path(path)) for path in matched_notes}
         filtered_files = [
-            file_entry
-            for file_entry in vault_graph.files
-            if _normalize_lookup_key(Path(file_entry.file_path)) in matched_paths
+            files_by_key[key]
+            for key in matched_paths
+            if key in files_by_key
         ]
 
         if source_entry and source_entry not in filtered_files:
@@ -235,7 +232,6 @@ def resolve_links(
         graph = VaultGraph(
             vault_root=vault_graph.vault_root,
             metadata=metadata,
-            files=resolved_files,
             edges=edges,
         )
 
@@ -243,7 +239,7 @@ def resolve_links(
     logger.debug(
         "resolve_links.complete",
         duration=round(duration, 4),
-        files=len(graph.files),
+        files=graph.metadata.total_files,
         edges=len(graph.edges),
     )
     return source_note, graph
