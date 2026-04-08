@@ -13,15 +13,6 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True)
-class FileStats:
-    """File system statistics for a resolved file."""
-
-    file_size: int
-    modified_time: float
-    access_time: float
-
-
-@dataclass(frozen=True, slots=True)
 class ExtractedLink:
     """Represents a serialized obsilink link used in API output."""
 
@@ -69,7 +60,6 @@ class ResolvedFile:
     frontmatter: dict[str, Any]
     status: str
     error: str | None
-    stats: FileStats | None
     file_hash: str | None
 
     @classmethod
@@ -80,13 +70,6 @@ class ResolvedFile:
             frontmatter=entry.frontmatter,
             status=entry.status,
             error=entry.error,
-            stats=FileStats(
-                file_size=entry.stats.file_size,
-                modified_time=entry.stats.modified_time,
-                access_time=entry.stats.access_time,
-            )
-            if entry.stats
-            else None,
             file_hash=entry.file_hash,
         )
 

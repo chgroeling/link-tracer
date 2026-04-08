@@ -107,7 +107,6 @@ def build_note_graph(
                     frontmatter={},
                     status="ok",
                     error=None,
-                    stats=None,
                     file_hash=None,
                 ),
             ]
@@ -218,7 +217,6 @@ def build_note_graph(
                     frontmatter={},
                     status="ok",
                     error=None,
-                    stats=None,
                     file_hash=None,
                 ),
                 *resolved_files,
