@@ -8,6 +8,7 @@ from pathlib import Path
 
 import structlog
 
+from link_tracer.consts import _POSSIBLE_EXTENSIONS
 from link_tracer.models import (
     LinkEdge,
     ResolvedFile,
@@ -19,8 +20,6 @@ from link_tracer.models import (
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
 
 logger = structlog.get_logger(__name__)
-
-_POSSIBLE_EXTENSIONS = (".md", ".MD", ".markdown")
 
 
 def _resolve_link_target_with_lookups(

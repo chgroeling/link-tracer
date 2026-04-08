@@ -16,11 +16,9 @@ from link_tracer.models import (
     VaultIndex,
 )
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
-from link_tracer.consts import _FILE_LINKS_KEY
+from link_tracer.consts import _FILE_LINKS_KEY, _POSSIBLE_EXTENSIONS
 
 logger = structlog.get_logger(__name__)
-
-_POSSIBLE_EXTENSIONS = (".md", ".MD", ".markdown")
 
 def _entry_has_file_links_payload(entry: object) -> bool:
     """Return whether an entry contains a serialized file-links payload."""
