@@ -13,17 +13,6 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True)
-class ResolveOptions:
-    """Store traversal options used for a resolve request."""
-
-    depth: int = 1
-
-    def __post_init__(self) -> None:
-        if self.depth < 0:
-            raise ValueError(f"depth must be >= 0, got {self.depth}")
-
-
-@dataclass(frozen=True, slots=True)
 class FileStats:
     """File system statistics for a resolved file."""
 

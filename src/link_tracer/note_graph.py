@@ -13,7 +13,6 @@ from link_tracer.models import (
     LinkEdge,
     ResolvedFile,
     ResolveMetadata,
-    ResolveOptions,
     VaultGraph,
     VaultIndex,
 )
@@ -77,12 +76,13 @@ def build_note_graph(
     vault_graph: VaultGraph,
     vault_index: VaultIndex,
     *,
-    options: ResolveOptions | None = None,
+    depth: int = 1,
 ) -> tuple[str, VaultGraph]:
     """Resolve links in a note and return the source note path and scoped link graph."""
+    if depth < 0:
+        raise ValueError(f"depth must be >= 0, got {depth}")
     start = time.monotonic()
-    resolved_options = options or ResolveOptions()
-    logger.debug("build_note_graph.start", note=str(note_path), depth=resolved_options.depth)
+    logger.debug("build_note_graph.start", note=str(note_path), depth=depth)
 
     resolved_note = note_path.resolve()
     resolved_vault = Path(vault_graph.vault_root).resolve()
@@ -99,7 +99,7 @@ def build_note_graph(
 
     source_entry = files_by_key.get(_normalize_lookup_key(Path(source_note)))
 
-    if resolved_options.depth == 0:
+    if depth == 0:
         if source_entry is None:
             resolved_files = [
                 ResolvedFile(
@@ -134,7 +134,7 @@ def build_note_graph(
         while queue:
             current_note, current_depth = queue.popleft()
 
-            if current_depth > resolved_options.depth:
+            if current_depth > depth:
                 break
 
             # --- Forward edges ---
@@ -184,7 +184,7 @@ def build_note_graph(
                     matched_notes.append(outgoing.target_note)
                     visited.add(outgoing.target_note)
 
-                    if current_depth < resolved_options.depth:
+                    if current_depth < depth:
                         queue.append((outgoing.target_note, current_depth + 1))
 
             # --- Backlink edges ---
@@ -196,7 +196,7 @@ def build_note_graph(
                     matched_notes.append(backlink_source)
                     visited.add(backlink_source)
 
-                    if current_depth < resolved_options.depth:
+                    if current_depth < depth:
                         queue.append((backlink_source, current_depth + 1))
 
         matched_paths = {_normalize_lookup_key(Path(path)) for path in matched_notes}

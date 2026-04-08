@@ -13,7 +13,6 @@ from dotenv import dotenv_values, find_dotenv
 
 from link_tracer import build_note_graph, build_vault_graph, scan_vault
 from link_tracer.logging import configure_debug_logging, get_console
-from link_tracer.models import ResolveOptions
 
 logger = structlog.get_logger(__name__)
 
@@ -113,11 +112,10 @@ def note_graph(
         "Starting link tracer", note=str(note), vault_root=str(vault_root) if vault_root else None
     )
     vault_root = resolve_vault_root(vault_root)
-    options = ResolveOptions(depth=depth)
     logger.info("Tracing links", note=str(note))
     vault_index = scan_vault(vault_root)
     vault_graph = build_vault_graph(vault_index=vault_index)
-    source_note, graph = build_note_graph(note_path=note, vault_graph=vault_graph, vault_index=vault_index, options=options)
+    source_note, graph = build_note_graph(note_path=note, vault_graph=vault_graph, vault_index=vault_index, depth=depth)
     payload = json.dumps({"source_note": source_note, **asdict(graph)}, indent=2)
     emit_json_output(payload, output)
     console.print("Link tracing complete")
