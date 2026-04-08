@@ -14,7 +14,7 @@ from link_tracer.models import (
     ResolveMetadata,
     ResolveOptions,
     ResolveResponse,
-    ResolveVaultResponse,
+    VaultGraph,
 )
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
 
@@ -75,7 +75,7 @@ def _build_reverse_index(
 
 def resolve_links(
     note_path: Path,
-    vault_response: ResolveVaultResponse,
+    vault_graph: VaultGraph,
     *,
     options: ResolveOptions | None = None,
 ) -> ResolveResponse:
@@ -85,17 +85,17 @@ def resolve_links(
     logger.debug("resolve_links.start", note=str(note_path), depth=resolved_options.depth)
 
     resolved_note = note_path.resolve()
-    resolved_vault = Path(vault_response.vault_root).resolve()
+    resolved_vault = Path(vault_graph.vault_root).resolve()
     source_note = _path_for_response(resolved_note, resolved_vault)
 
     files_by_key: dict[str, ResolvedFile] = {}
-    for file_entry in vault_response.files:
+    for file_entry in vault_graph.files:
         files_by_key.setdefault(_normalize_lookup_key(Path(file_entry.file_path)), file_entry)
 
     name_to_file: dict[str, Path] = {}
     stem_to_file: dict[str, Path] = {}
     relative_path_to_file: dict[str, Path] = {}
-    for file_entry in vault_response.files:
+    for file_entry in vault_graph.files:
         file_path = Path(file_entry.file_path)
         name_to_file.setdefault(file_path.name.lower(), file_path)
         stem_to_file.setdefault(file_path.stem.lower(), file_path)
@@ -119,10 +119,10 @@ def resolve_links(
             resolved_files = [ResolvedFile.from_file_entry(source_entry)]
 
         metadata = ResolveMetadata.from_files(
-            vault_response.metadata.source_directory, resolved_files
+            vault_graph.metadata.source_directory, resolved_files
         )
         response = ResolveResponse(
-            vault_root=vault_response.vault_root,
+            vault_root=vault_graph.vault_root,
             source_note=source_note,
             options=resolved_options,
             metadata=metadata,
@@ -130,7 +130,7 @@ def resolve_links(
             edges={},
         )
     else:
-        reverse_index = _build_reverse_index(vault_response.edges)
+        reverse_index = _build_reverse_index(vault_graph.edges)
         visited: set[str] = {source_note}
         matched_notes: list[str] = []
         edges: dict[str, list[LinkEdge]] = {}
@@ -145,7 +145,7 @@ def resolve_links(
                 break
 
             # --- Forward edges ---
-            outgoing_links = vault_response.edges.get(current_note)
+            outgoing_links = vault_graph.edges.get(current_note)
             if outgoing_links is None:
                 current_note_path = Path(current_note)
                 if not current_note_path.is_absolute():
@@ -209,7 +209,7 @@ def resolve_links(
         matched_paths = {_normalize_lookup_key(Path(path)) for path in matched_notes}
         filtered_files = [
             file_entry
-            for file_entry in vault_response.files
+            for file_entry in vault_graph.files
             if _normalize_lookup_key(Path(file_entry.file_path)) in matched_paths
         ]
 
@@ -232,11 +232,11 @@ def resolve_links(
             ]
 
         metadata = ResolveMetadata.from_files(
-            vault_response.metadata.source_directory, resolved_files
+            vault_graph.metadata.source_directory, resolved_files
         )
 
         response = ResolveResponse(
-            vault_root=vault_response.vault_root,
+            vault_root=vault_graph.vault_root,
             source_note=source_note,
             options=resolved_options,
             metadata=metadata,

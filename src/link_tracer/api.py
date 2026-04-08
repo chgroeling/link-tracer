@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import structlog
 from matterify import scan_directory
 
-from link_tracer.models import ResolveResponse, ResolveVaultResponse, VaultIndex
+from link_tracer.models import ResolveResponse, VaultGraph, VaultIndex
 from link_tracer.resolve_links import resolve_links
 from link_tracer.resolve_vault_links import (
     _extract_file_links_callback,
@@ -77,7 +77,7 @@ def scan_vault(vault_root: Path) -> VaultIndex:
 
 __all__ = [
     "ResolveResponse",
-    "ResolveVaultResponse",
+    "VaultGraph",
     "build_vault_index",
     "resolve_links",
     "resolve_vault_links",

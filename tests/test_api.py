@@ -147,7 +147,7 @@ def test_scan_vault_delegates_to_scan_directory() -> None:
 
 
 def test_resolve_links_uses_prebuilt_index() -> None:
-    """resolve_links() works with a prebuilt ResolveVaultResponse."""
+    """resolve_links() works with a prebuilt VaultGraph."""
     vault_root = Path("/tmp/vault")  # noqa: S108
     note_path = vault_root / "home.md"
     files = [
@@ -160,10 +160,10 @@ def test_resolve_links_uses_prebuilt_index() -> None:
     )
     vault_index = build_vault_index(vault_root, scan_result)
     with patch.object(Path, "read_text", return_value="[[about]]"):
-        vault_response = resolve_vault_links(vault_index)
+        vault_graph = resolve_vault_links(vault_index)
 
     with patch.object(Path, "read_text", return_value="[[about]]"):
-        response = resolve_links(note_path, vault_response)
+        response = resolve_links(note_path, vault_graph)
 
     assert response.vault_root == str(vault_root)
     assert set(response.edges) == {"home.md"}
@@ -185,14 +185,14 @@ def test_resolve_links_multiple_calls_reuse_same_index() -> None:
     )
     vault_index = build_vault_index(vault_root, scan_result)
     with patch.object(Path, "read_text", return_value="[[about]]"):
-        vault_response = resolve_vault_links(vault_index)
+        vault_graph = resolve_vault_links(vault_index)
 
     with (
         patch("link_tracer.api.scan_directory") as mock_scan,
         patch.object(Path, "read_text", return_value="[[about]]"),
     ):
-        resolve_links(vault_root / "home.md", vault_response)
-        resolve_links(vault_root / "about.md", vault_response)
+        resolve_links(vault_root / "home.md", vault_graph)
+        resolve_links(vault_root / "about.md", vault_graph)
 
     mock_scan.assert_not_called()
 

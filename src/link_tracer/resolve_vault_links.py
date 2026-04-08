@@ -12,7 +12,7 @@ from link_tracer.models import (
     LinkEdge,
     ResolvedFile,
     ResolveMetadata,
-    ResolveVaultResponse,
+    VaultGraph,
     VaultIndex,
 )
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
@@ -152,7 +152,7 @@ def _resolve_extracted_link(
     )
 
 
-def resolve_vault_links(vault_index: VaultIndex) -> ResolveVaultResponse:
+def resolve_vault_links(vault_index: VaultIndex) -> VaultGraph:
     """Resolve all file links for every scanned note in a vault."""
     start = time.monotonic()
     logger.debug("resolve_vault_links.start", total_files=len(vault_index.files))
@@ -180,7 +180,7 @@ def resolve_vault_links(vault_index: VaultIndex) -> ResolveVaultResponse:
 
     resolved_files = [ResolvedFile.from_file_entry(file_entry) for file_entry in vault_index.files]
     metadata = ResolveMetadata.from_files(vault_index.source_directory, resolved_files)
-    response = ResolveVaultResponse(
+    response = VaultGraph(
         vault_root=str(vault_index.vault_root),
         metadata=metadata,
         files=resolved_files,

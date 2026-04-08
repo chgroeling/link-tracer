@@ -5,7 +5,7 @@ from __future__ import annotations
 from importlib.metadata import PackageNotFoundError, version
 
 from link_tracer.api import build_vault_index, resolve_links, resolve_vault_links, scan_vault
-from link_tracer.models import ResolveOptions, ResolveResponse, ResolveVaultResponse, VaultIndex
+from link_tracer.models import ResolveOptions, ResolveResponse, VaultGraph, VaultIndex
 
 try:
     __version__ = version("link-tracer")
@@ -15,7 +15,7 @@ except PackageNotFoundError:
 __all__ = [
     "ResolveOptions",
     "ResolveResponse",
-    "ResolveVaultResponse",
+    "VaultGraph",
     "VaultIndex",
     "__version__",
     "build_vault_index",

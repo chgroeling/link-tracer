@@ -139,8 +139,8 @@ class ResolveResponse:
 
 
 @dataclass(frozen=True, slots=True)
-class ResolveVaultResponse:
-    """Complete result of resolving links for every note in a vault."""
+class VaultGraph:
+    """Prebuilt vault-wide link graph used as input to resolve_links()."""
 
     vault_root: str
     metadata: ResolveMetadata
