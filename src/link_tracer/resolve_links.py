@@ -13,7 +13,6 @@ from link_tracer.models import (
     ResolvedFile,
     ResolveMetadata,
     ResolveOptions,
-    ResolveResponse,
     VaultGraph,
 )
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
@@ -78,8 +77,8 @@ def resolve_links(
     vault_graph: VaultGraph,
     *,
     options: ResolveOptions | None = None,
-) -> ResolveResponse:
-    """Resolve links in a note against a prebuilt vault edge graph."""
+) -> tuple[str, VaultGraph]:
+    """Resolve links in a note and return the source note path and scoped link graph."""
     start = time.monotonic()
     resolved_options = options or ResolveOptions()
     logger.debug("resolve_links.start", note=str(note_path), depth=resolved_options.depth)
@@ -121,10 +120,8 @@ def resolve_links(
         metadata = ResolveMetadata.from_files(
             vault_graph.metadata.source_directory, resolved_files
         )
-        response = ResolveResponse(
+        graph = VaultGraph(
             vault_root=vault_graph.vault_root,
-            source_note=source_note,
-            options=resolved_options,
             metadata=metadata,
             files=resolved_files,
             edges={},
@@ -235,10 +232,8 @@ def resolve_links(
             vault_graph.metadata.source_directory, resolved_files
         )
 
-        response = ResolveResponse(
+        graph = VaultGraph(
             vault_root=vault_graph.vault_root,
-            source_note=source_note,
-            options=resolved_options,
             metadata=metadata,
             files=resolved_files,
             edges=edges,
@@ -248,7 +243,7 @@ def resolve_links(
     logger.debug(
         "resolve_links.complete",
         duration=round(duration, 4),
-        files=len(response.files),
-        edges=len(response.edges),
+        files=len(graph.files),
+        edges=len(graph.edges),
     )
-    return response
+    return source_note, graph

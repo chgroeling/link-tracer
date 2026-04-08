@@ -127,20 +127,8 @@ class ResolveMetadata:
 
 
 @dataclass(frozen=True, slots=True)
-class ResolveResponse:
-    """Complete result of a link resolution operation."""
-
-    vault_root: str
-    source_note: str
-    options: ResolveOptions
-    metadata: ResolveMetadata
-    files: list[ResolvedFile]
-    edges: dict[str, list[LinkEdge]]
-
-
-@dataclass(frozen=True, slots=True)
 class VaultGraph:
-    """Prebuilt vault-wide link graph used as input to resolve_links()."""
+    """Vault-wide link graph: files with resolved edges."""
 
     vault_root: str
     metadata: ResolveMetadata
