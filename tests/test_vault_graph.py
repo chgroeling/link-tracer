@@ -1,73 +1,61 @@
-"""Unit tests for the resolve_vault_links module."""
+"""Unit tests for the vault_graph module."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from link_tracer import build_vault_graph, scan_vault
-from link_tracer.models import VaultIndex
-from link_tracer.vault_graph import _resolve_link_to_file
-from tests.fixtures import FakeFileEntry
 
 
-def _make_vault_index(
-    vault_root: Path = Path("/tmp/vault"),  # noqa: S108
-    files: list | None = None,
-    source_directory: str = "/tmp/vault",  # noqa: S108
-) -> VaultIndex:
-    """Construct a minimal VaultIndex for testing."""
-    vault_files = [Path(f.file_path) for f in files] if files else []
-    name_to_file, stem_to_file, relative_path_to_file = VaultIndex._build_vault_lookups(vault_files)
-    return VaultIndex(
-        vault_root=vault_root,
-        files=files or [],
-        source_directory=source_directory,
-        name_to_file=name_to_file,
-        stem_to_file=stem_to_file,
-        relative_path_to_file=relative_path_to_file,
-    )
-
-
-def test_build_vault_graph_returns_first_match_for_duplicate_names() -> None:
+def test_build_vault_graph_returns_first_match_for_duplicate_names(tmp_path: Path) -> None:
     """Unqualified links resolve to the first matching file when duplicates exist."""
-    files = [
-        FakeFileEntry(file_path="docs/about.md"),
-        FakeFileEntry(file_path="teams/about.md"),
-    ]
-    vault_index = _make_vault_index(files=files)
+    vault_root = tmp_path / "vault"
+    (vault_root / "docs").mkdir(parents=True)
+    (vault_root / "teams").mkdir()
+    (vault_root / "source.md").write_text("[[about]]", encoding="utf-8")
+    (vault_root / "docs" / "about.md").write_text("", encoding="utf-8")
+    (vault_root / "teams" / "about.md").write_text("", encoding="utf-8")
 
-    matched = _resolve_link_to_file(Path("about"), vault_index)
+    vault_index = scan_vault(vault_root)
+    response = build_vault_graph(vault_index)
 
-    assert matched == Path("docs/about.md")
+    assert response.edges["source.md"][0].resolved is True
+    assert response.edges["source.md"][0].target_note == "docs/about.md"
 
 
-def test_build_vault_graph_with_extension_returns_first_duplicate_match() -> None:
+def test_build_vault_graph_with_extension_returns_first_duplicate_match(tmp_path: Path) -> None:
     """Unqualified links with extension resolve to the first duplicate match."""
-    files = [
-        FakeFileEntry(file_path="docs/about.md"),
-        FakeFileEntry(file_path="teams/about.md"),
-    ]
-    vault_index = _make_vault_index(files=files)
+    vault_root = tmp_path / "vault"
+    (vault_root / "docs").mkdir(parents=True)
+    (vault_root / "teams").mkdir()
+    (vault_root / "source.md").write_text("[[about.md]]", encoding="utf-8")
+    (vault_root / "docs" / "about.md").write_text("", encoding="utf-8")
+    (vault_root / "teams" / "about.md").write_text("", encoding="utf-8")
 
-    matched = _resolve_link_to_file(Path("about.md"), vault_index)
+    vault_index = scan_vault(vault_root)
+    response = build_vault_graph(vault_index)
 
-    assert matched == Path("docs/about.md")
+    assert response.edges["source.md"][0].resolved is True
+    assert response.edges["source.md"][0].target_note == "docs/about.md"
 
 
-def test_build_vault_graph_uses_path_component_to_disambiguate() -> None:
+def test_build_vault_graph_uses_path_component_to_disambiguate(tmp_path: Path) -> None:
     """Path-qualified links resolve the matching duplicate file."""
-    files = [
-        FakeFileEntry(file_path="docs/about.md"),
-        FakeFileEntry(file_path="teams/about.md"),
-    ]
-    vault_index = _make_vault_index(files=files)
+    vault_root = tmp_path / "vault"
+    (vault_root / "docs").mkdir(parents=True)
+    (vault_root / "teams").mkdir()
+    (vault_root / "source.md").write_text("[[teams/about]]", encoding="utf-8")
+    (vault_root / "docs" / "about.md").write_text("", encoding="utf-8")
+    (vault_root / "teams" / "about.md").write_text("", encoding="utf-8")
 
-    matched = _resolve_link_to_file(Path("teams/about"), vault_index)
+    vault_index = scan_vault(vault_root)
+    response = build_vault_graph(vault_index)
 
-    assert matched == Path("teams/about.md")
+    assert response.edges["source.md"][0].resolved is True
+    assert response.edges["source.md"][0].target_note == "teams/about.md"
 
 
-def test_resolve_vault_links_resolves_edges_for_every_file(tmp_path: Path) -> None:
+def test_build_vault_graph_resolves_edges_for_every_file(tmp_path: Path) -> None:
     """resolve_vault_links() builds edges for all notes in the scanned vault."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()

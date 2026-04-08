@@ -1,4 +1,4 @@
-"""Unit tests for the resolve_links module."""
+"""Unit tests for the note_graph module."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ from unittest.mock import patch
 import pytest
 
 from link_tracer import build_index, build_note_graph, build_vault_graph, scan_vault
-from link_tracer.models import ResolveOptions, VaultIndex
+from link_tracer.models import ResolveOptions
 from tests.fixtures import FakeAggregatedResult, FakeFileEntry, FakeScanMetadata
 
 
-def test_resolve_links_uses_prebuilt_index() -> None:
+def test_build_note_graph_uses_prebuilt_index() -> None:
     """build_note_graph() works with a prebuilt VaultGraph."""
     vault_root = Path("/tmp/vault")  # noqa: S108
     note_path = vault_root / "home.md"
@@ -37,7 +37,7 @@ def test_resolve_links_uses_prebuilt_index() -> None:
     assert graph.edges["home.md"][0].resolved is True
 
 
-def test_resolve_links_multiple_calls_reuse_same_index() -> None:
+def test_build_note_graph_multiple_calls_reuse_same_index() -> None:
     """Multiple build_note_graph() calls with same vault response do not rescan."""
     vault_root = Path("/tmp/vault")  # noqa: S108
     files = [
@@ -69,13 +69,13 @@ def test_resolve_options_rejects_negative_depth() -> None:
         ResolveOptions(depth=-1)
 
 
-def test_resolve_links_default_depth_is_one() -> None:
+def test_resolve_options_default_depth_is_one() -> None:
     """Default ResolveOptions uses depth=1."""
     options = ResolveOptions()
     assert options.depth == 1
 
 
-def test_resolve_links_depth_zero_returns_source_only(tmp_path: Path) -> None:
+def test_build_note_graph_depth_zero_returns_source_only(tmp_path: Path) -> None:
     """depth=0 returns only the source note with no edges."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -93,7 +93,7 @@ def test_resolve_links_depth_zero_returns_source_only(tmp_path: Path) -> None:
     assert graph.edges == {}
 
 
-def test_resolve_links_depth_one_returns_direct_links(tmp_path: Path) -> None:
+def test_build_note_graph_depth_one_returns_direct_links(tmp_path: Path) -> None:
     """depth=1 returns source note and direct outgoing link edges."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -112,7 +112,7 @@ def test_resolve_links_depth_one_returns_direct_links(tmp_path: Path) -> None:
     assert [edge.target_note for edge in graph.edges["home.md"]] == ["about.md"]
 
 
-def test_resolve_links_uses_indexed_links_without_file_reads(tmp_path: Path) -> None:
+def test_build_note_graph_uses_indexed_links_without_file_reads(tmp_path: Path) -> None:
     """build_note_graph() uses indexed link payloads when available."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -131,7 +131,7 @@ def test_resolve_links_uses_indexed_links_without_file_reads(tmp_path: Path) -> 
     assert [edge.target_note for edge in graph.edges["home.md"]] == ["about.md"]
 
 
-def test_resolve_links_depth_two_returns_children_links(tmp_path: Path) -> None:
+def test_build_note_graph_depth_two_returns_children_links(tmp_path: Path) -> None:
     """depth=2 returns outgoing edges for source and first-level children."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -154,7 +154,7 @@ def test_resolve_links_depth_two_returns_children_links(tmp_path: Path) -> None:
     assert [edge.target_note for edge in graph.edges["about.md"]] == ["contact.md"]
 
 
-def test_resolve_links_depth_three_returns_grandchildren_links(tmp_path: Path) -> None:
+def test_build_note_graph_depth_three_returns_grandchildren_links(tmp_path: Path) -> None:
     """depth=3 traverses three levels deep."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -172,7 +172,7 @@ def test_resolve_links_depth_three_returns_grandchildren_links(tmp_path: Path) -
     assert set(graph.edges) == {"a.md", "b.md", "c.md"}
 
 
-def test_resolve_links_circular_links_no_infinite_loop(tmp_path: Path) -> None:
+def test_build_note_graph_circular_links_no_infinite_loop(tmp_path: Path) -> None:
     """Circular links (A->B->A) do not cause infinite loop."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -189,7 +189,7 @@ def test_resolve_links_circular_links_no_infinite_loop(tmp_path: Path) -> None:
     assert [edge.target_note for edge in graph.edges["b.md"]] == ["a.md"]
 
 
-def test_resolve_links_includes_unresolved_edges(tmp_path: Path) -> None:
+def test_build_note_graph_includes_unresolved_edges(tmp_path: Path) -> None:
     """Unresolvable file links are reported as unresolved edges."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -214,7 +214,7 @@ def test_resolve_links_includes_unresolved_edges(tmp_path: Path) -> None:
     assert graph.edges["home.md"][1].link.target == "missing-note"
 
 
-def test_resolve_links_external_note_outside_vault_uses_fallback_parsing(tmp_path: Path) -> None:
+def test_build_note_graph_external_note_outside_vault_uses_fallback_parsing(tmp_path: Path) -> None:
     """External source note still resolves links via fallback parsing."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
