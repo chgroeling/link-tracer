@@ -61,6 +61,18 @@ def _resolve_link_target_with_lookups(
     return stem_to_file.get(target_path.stem.lower())
 
 
+def _build_reverse_index(
+    edges: dict[str, list[LinkEdge]],
+) -> dict[str, list[tuple[str, LinkEdge]]]:
+    """Build a reverse lookup from target_note to (source_note, edge) pairs."""
+    reverse: dict[str, list[tuple[str, LinkEdge]]] = {}
+    for source_note, outgoing in edges.items():
+        for edge in outgoing:
+            if edge.resolved and edge.target_note is not None:
+                reverse.setdefault(edge.target_note, []).append((source_note, edge))
+    return reverse
+
+
 def resolve_links(
     note_path: Path,
     vault_response: ResolveVaultResponse,
@@ -118,6 +130,7 @@ def resolve_links(
             edges={},
         )
     else:
+        reverse_index = _build_reverse_index(vault_response.edges)
         visited: set[str] = {source_note}
         matched_notes: list[str] = []
         edges: dict[str, list[LinkEdge]] = {}
@@ -131,6 +144,7 @@ def resolve_links(
             if current_depth > resolved_options.depth:
                 break
 
+            # --- Forward edges ---
             outgoing_links = vault_response.edges.get(current_note)
             if outgoing_links is None:
                 current_note_path = Path(current_note)
@@ -179,6 +193,18 @@ def resolve_links(
 
                     if current_depth < resolved_options.depth:
                         queue.append((outgoing.target_note, current_depth + 1))
+
+            # --- Backlink edges ---
+            for backlink_source, original_edge in reverse_index.get(current_note, []):
+                if backlink_source not in edges:
+                    edges.setdefault(backlink_source, []).append(original_edge)
+
+                if backlink_source not in visited:
+                    matched_notes.append(backlink_source)
+                    visited.add(backlink_source)
+
+                    if current_depth < resolved_options.depth:
+                        queue.append((backlink_source, current_depth + 1))
 
         matched_paths = {_normalize_lookup_key(Path(path)) for path in matched_notes}
         filtered_files = [

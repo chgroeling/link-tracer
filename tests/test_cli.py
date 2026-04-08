@@ -196,23 +196,22 @@ def test_trace_filters_files_to_matched_links(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["metadata"]["total_files"] == 2
-    assert payload["metadata"]["files_with_frontmatter"] == 2
+    assert payload["metadata"]["total_files"] == 5
+    assert payload["metadata"]["files_with_frontmatter"] == 5
     assert payload["metadata"]["files_without_frontmatter"] == 0
     assert payload["metadata"]["errors"] == 0
-    assert len(payload["files"]) == 2
+    assert len(payload["files"]) == 5
     file_names = {f["file_path"].split("/")[-1] for f in payload["files"]}
-    assert file_names == {"home.md", "about.md"}
+    assert file_names == {"home.md", "about.md", "tasks.md", "notes.md", "reading_list.md"}
     assert payload["files"][0]["file_path"].endswith("home.md")
     assert payload["files"][0]["frontmatter"] == {"title": "Home", "tags": ["index"]}
     assert payload["files"][0]["status"] == "ok"
-    assert payload["files"][1]["file_path"].endswith("about.md")
-    assert payload["files"][1]["frontmatter"] == {"title": "About", "tags": ["info"]}
-    assert payload["files"][1]["status"] == "ok"
-    assert set(payload["edges"]) == {"home.md"}
+    # Forward edge
     assert payload["edges"]["home.md"][0]["target_note"] == "about.md"
     assert payload["edges"]["home.md"][0]["resolved"] is True
     assert payload["edges"]["home.md"][0]["link"]["target"].lower() == "about"
+    # Backlink edges into home
+    assert set(payload["edges"]) == {"home.md", "tasks.md", "notes.md", "reading_list.md"}
 
 
 def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
@@ -225,19 +224,28 @@ def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["metadata"]["total_files"] == 4
-    assert payload["metadata"]["files_with_frontmatter"] == 4
+    assert payload["metadata"]["total_files"] == 6
+    assert payload["metadata"]["files_with_frontmatter"] == 6
     assert payload["metadata"]["files_without_frontmatter"] == 0
     assert payload["metadata"]["errors"] == 0
-    assert len(payload["files"]) == 4
+    assert len(payload["files"]) == 6
     file_names = {f["file_path"].split("/")[-1] for f in payload["files"]}
-    assert file_names == {"about.md", "projects.md", "tasks.md", "diagram.md"}
-    assert set(payload["edges"]) == {"about.md"}
+    assert file_names == {
+        "about.md",
+        "projects.md",
+        "tasks.md",
+        "diagram.md",
+        "home.md",
+        "notes.md",
+    }
+    # Forward edges from about
     assert [edge["target_note"] for edge in payload["edges"]["about.md"]] == [
         "projects.md",
         "tasks.md",
         "diagram.md",
     ]
+    # Backlink edges into about
+    assert set(payload["edges"]) == {"about.md", "home.md", "notes.md", "diagram.md"}
 
 
 def test_trace_links_matches_link_without_extension(tmp_path: Path) -> None:

@@ -395,3 +395,120 @@ def test_resolve_vault_links_resolves_edges_for_every_file(tmp_path: Path) -> No
     assert response.edges["home.md"][0].target_note == "about.md"
     assert response.edges["about.md"][0].resolved is False
     assert response.edges["about.md"][0].unresolved_reason == "not_found"
+
+
+# --- Backlink tests ---
+
+
+def test_backlinks_depth_one_shows_incoming_edges(tmp_path: Path) -> None:
+    """depth=1 includes backlink edges from notes that link to the source."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
+    (vault_root / "b.md").write_text("---\ntitle: B\n---\nNo links", encoding="utf-8")
+
+    vault_index = scan_vault(vault_root)
+    vault_response = resolve_vault_links(vault_index)
+    response = resolve_links(vault_root / "b.md", vault_response, options=ResolveOptions(depth=1))
+
+    # b.md has no forward edges, but a.md links to b.md → backlink
+    assert "a.md" in response.edges
+    backlink_edges = response.edges["a.md"]
+    assert len(backlink_edges) == 1
+    assert backlink_edges[0].target_note == "b.md"
+    assert backlink_edges[0].resolved is True
+    assert any("a.md" in f.file_path for f in response.files)
+
+
+def test_backlinks_depth_two_bidirectional(tmp_path: Path) -> None:
+    """depth=2 traverses forward and backward across two levels."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
+    (vault_root / "b.md").write_text("---\ntitle: B\n---\n[[c]]", encoding="utf-8")
+    (vault_root / "c.md").write_text("---\ntitle: C\n---\nNo links", encoding="utf-8")
+    (vault_root / "d.md").write_text("---\ntitle: D\n---\n[[a]]", encoding="utf-8")
+
+    vault_index = scan_vault(vault_root)
+    vault_response = resolve_vault_links(vault_index)
+    response = resolve_links(vault_root / "b.md", vault_response, options=ResolveOptions(depth=2))
+
+    # depth=1 from b: forward→c, backlink a→b
+    # depth=2 from c: no forward, no backlinks besides b→c (already visited)
+    # depth=2 from a: forward a→b (already visited), backlink d→a
+    assert "b.md" in response.edges  # forward b→c
+    assert "a.md" in response.edges  # a→b (backlink at depth=1, forward at depth=2)
+    assert "d.md" in response.edges  # d→a (backlink at depth=2)
+
+    assert any(e.target_note == "c.md" for e in response.edges["b.md"])
+    assert any(e.target_note == "b.md" for e in response.edges["a.md"])
+    assert any(e.target_note == "a.md" for e in response.edges["d.md"])
+
+
+def test_backlink_no_duplicate_when_forward_visited(tmp_path: Path) -> None:
+    """A backlink edge is not duplicated when the source is also forward-visited."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    # a→b and b→a: circular. Resolve a at depth=2.
+    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
+    (vault_root / "b.md").write_text("---\ntitle: B\n---\n[[a]]", encoding="utf-8")
+
+    vault_index = scan_vault(vault_root)
+    vault_response = resolve_vault_links(vault_index)
+    response = resolve_links(vault_root / "a.md", vault_response, options=ResolveOptions(depth=2))
+
+    # a.md should have exactly one edge a→b (no duplicate from backlink discovery)
+    assert len(response.edges.get("a.md", [])) == 1
+    assert response.edges["a.md"][0].target_note == "b.md"
+
+    # b.md should have exactly one edge b→a
+    assert len(response.edges.get("b.md", [])) == 1
+    assert response.edges["b.md"][0].target_note == "a.md"
+
+
+def test_no_backlinks_for_isolated_note(tmp_path: Path) -> None:
+    """A note with no incoming links has no backlink edges."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
+    (vault_root / "b.md").write_text("---\ntitle: B\n---\nNo links", encoding="utf-8")
+    (vault_root / "c.md").write_text("---\ntitle: C\n---\nNo links", encoding="utf-8")
+
+    vault_index = scan_vault(vault_root)
+    vault_response = resolve_vault_links(vault_index)
+    # Resolve a.md — nobody links to a.md, so no backlinks
+    response = resolve_links(vault_root / "a.md", vault_response, options=ResolveOptions(depth=1))
+
+    assert set(response.edges) == {"a.md"}
+    assert all(e.resolved for e in response.edges["a.md"])
+
+
+def test_backlink_circular_links_no_infinite_loop(tmp_path: Path) -> None:
+    """Circular links with backlinks do not cause infinite loop."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
+    (vault_root / "b.md").write_text("---\ntitle: B\n---\n[[a]]", encoding="utf-8")
+
+    vault_index = scan_vault(vault_root)
+    vault_response = resolve_vault_links(vault_index)
+    response = resolve_links(vault_root / "a.md", vault_response, options=ResolveOptions(depth=5))
+
+    assert len(response.files) == 2
+    assert "a.md" in response.edges
+    assert "b.md" in response.edges
+
+
+def test_backlinks_depth_zero_no_edges(tmp_path: Path) -> None:
+    """depth=0 returns no edges even when backlinks exist."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
+    (vault_root / "b.md").write_text("---\ntitle: B\n---\nNo links", encoding="utf-8")
+
+    vault_index = scan_vault(vault_root)
+    vault_response = resolve_vault_links(vault_index)
+    response = resolve_links(vault_root / "b.md", vault_response, options=ResolveOptions(depth=0))
+
+    assert response.edges == {}
+    assert len(response.files) == 1
