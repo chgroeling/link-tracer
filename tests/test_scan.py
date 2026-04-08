@@ -18,7 +18,7 @@ def test_build_vault_index_constructs_from_scan_result() -> None:
         FakeFileEntry(file_path="about.md", frontmatter={"title": "About"}),
     ]
     scan_result = FakeAggregatedResult(
-        metadata=FakeScanMetadata(source_directory=vault_root),
+        metadata=FakeScanMetadata(root=str(vault_root)),
         files=files,
     )
 
@@ -39,7 +39,7 @@ def test_scan_vault_delegates_to_scan_directory() -> None:
         FakeFileEntry(file_path="note.md"),
     ]
     fake_result = FakeAggregatedResult(
-        metadata=FakeScanMetadata(source_directory=vault_root),
+        metadata=FakeScanMetadata(root=str(vault_root)),
         files=fake_files,
     )
 

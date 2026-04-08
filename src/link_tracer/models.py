@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from link_tracer.utils import _normalize_lookup_key
 
 if TYPE_CHECKING:
-    from matterify.models import AggregatedResult, FileEntry
+    from matterify.models import FileEntry, ScanResults
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,13 +107,13 @@ class VaultIndex:  # type: ignore[no-any-unimported]
     def from_scan_result(  # type: ignore[no-any-unimported]
         cls,
         vault_root: Path,
-        scan_result: AggregatedResult,
+        scan_result: ScanResults,
     ) -> VaultIndex:
         """Build a VaultIndex from a matterify scan result.
 
         Args:
             vault_root: Root directory of the vault.
-            scan_result: AggregatedResult from matterify.scan_directory().
+            scan_result: ScanResults from matterify.scan_directory().
 
         Returns:
             VaultIndex with prebuilt lookup maps.
@@ -121,14 +121,10 @@ class VaultIndex:  # type: ignore[no-any-unimported]
         vault_files = [Path(f.file_path) for f in scan_result.files]
         name_to_file, stem_to_file, relative_path_to_file = cls._build_vault_lookups(vault_files)
 
-        source_directory = getattr(scan_result.metadata, "source_directory", None)
-        if source_directory is None:
-            source_directory = scan_result.metadata.root
-
         return cls(
             vault_root=vault_root,
             files=scan_result.files,
-            source_directory=str(source_directory),
+            source_directory=scan_result.metadata.root,
             name_to_file=name_to_file,
             stem_to_file=stem_to_file,
             relative_path_to_file=relative_path_to_file,

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import structlog
 
+from link_tracer.consts import _POSSIBLE_EXTENSIONS
 from link_tracer.models import (
     ExtractedLink,
     LinkEdge,
@@ -15,27 +16,22 @@ from link_tracer.models import (
     VaultIndex,
 )
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
-from link_tracer.consts import _FILE_LINKS_KEY, _POSSIBLE_EXTENSIONS
 
 logger = structlog.get_logger(__name__)
 
 def _entry_has_file_links_payload(entry: object) -> bool:
     """Return whether an entry contains a serialized file-links payload."""
     custom_data = getattr(entry, "custom_data", None)
-    return isinstance(custom_data, dict) and isinstance(custom_data.get(_FILE_LINKS_KEY), list)
+    return isinstance(custom_data, list)
 
 def _entry_file_links(entry: object) -> list[ExtractedLink]:
     """Read serialized file links from a scan entry custom_data payload."""
     custom_data = getattr(entry, "custom_data", None)
-    if not isinstance(custom_data, dict):
-        return []
-
-    raw_links = custom_data.get(_FILE_LINKS_KEY)
-    if not isinstance(raw_links, list):
+    if not isinstance(custom_data, list):
         return []
 
     links: list[ExtractedLink] = []
-    for raw_link in raw_links:
+    for raw_link in custom_data:
         if not isinstance(raw_link, dict):
             continue
 

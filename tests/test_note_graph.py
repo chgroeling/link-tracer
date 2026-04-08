@@ -8,7 +8,6 @@ from unittest.mock import patch
 import pytest
 
 from link_tracer import build_index, build_note_graph, build_vault_graph, scan_vault
-
 from tests.fixtures import FakeAggregatedResult, FakeFileEntry, FakeScanMetadata
 
 
@@ -21,7 +20,7 @@ def test_build_note_graph_uses_prebuilt_index() -> None:
         FakeFileEntry(file_path="about.md", frontmatter={"title": "About"}),
     ]
     scan_result = FakeAggregatedResult(
-        metadata=FakeScanMetadata(source_directory=vault_root),
+        metadata=FakeScanMetadata(root=str(vault_root)),
         files=files,
     )
     vault_index = build_index(vault_root, scan_result)
@@ -46,7 +45,7 @@ def test_build_note_graph_multiple_calls_reuse_same_index() -> None:
         FakeFileEntry(file_path="contact.md", frontmatter={"title": "Contact"}),
     ]
     scan_result = FakeAggregatedResult(
-        metadata=FakeScanMetadata(source_directory=vault_root),
+        metadata=FakeScanMetadata(root=str(vault_root)),
         files=files,
     )
     vault_index = build_index(vault_root, scan_result)

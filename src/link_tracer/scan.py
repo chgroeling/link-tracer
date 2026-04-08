@@ -10,17 +10,17 @@ from matterify import scan_directory
 
 from link_tracer.models import VaultIndex
 from link_tracer.utils import _extract_file_links
-from link_tracer.consts import _FILE_LINKS_KEY
 
 logger = structlog.get_logger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from matterify.models import AggregatedResult
 
-def _extract_file_links_callback(content: str) -> dict[str, object]:
+    from matterify.models import ScanResults
+
+def _extract_file_links_callback(content: str) -> list[dict[str, object]]:
     """Extract serializable file links from note content."""
-    file_links = [
+    return [
         {
             "link_type": link.link_type,
             "target": link.target,
@@ -30,17 +30,16 @@ def _extract_file_links_callback(content: str) -> dict[str, object]:
         }
         for link in _extract_file_links(content)
     ]
-    return {_FILE_LINKS_KEY: file_links}
 
 def build_index(  # type: ignore[no-any-unimported]
     vault_root: Path,
-    scan_result: AggregatedResult,
+    scan_result: ScanResults,
 ) -> VaultIndex:
     """Build a VaultIndex from an existing scan result.
 
     Args:
         vault_root: Root directory of the vault.
-        scan_result: AggregatedResult from matterify.scan_directory().
+        scan_result: ScanResults from matterify.scan_directory().
 
     Returns:
         VaultIndex with prebuilt lookup maps.

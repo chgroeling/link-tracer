@@ -181,11 +181,12 @@ class FakeFileEntry:
     status: str = "ok"
     error: str | None = None
     file_hash: str | None = None
+    custom_data: object | None = None
 
 
 @dataclass
 class FakeScanMetadata:
-    source_directory: Path = field(default_factory=lambda: Path("/tmp/vault"))  # noqa: S108
+    root: str = "/tmp/vault"  # noqa: S108
 
 
 @dataclass
