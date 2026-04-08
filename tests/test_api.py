@@ -8,13 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from link_tracer.api import (
-    _resolve_link_to_file,
-    build_index,
-    resolve_links,
-    resolve_vault_links,
-    scan_vault,
-)
+from link_tracer import build_index, resolve_links, resolve_vault_links, scan_vault
+from link_tracer.resolve_vault_links import _resolve_link_to_file
 from link_tracer.models import ResolveOptions, VaultIndex
 
 
@@ -136,7 +131,7 @@ def test_scan_vault_delegates_to_scan_directory() -> None:
         files=fake_files,
     )
 
-    with patch("link_tracer.api.scan_directory", return_value=fake_result) as mock_scan:
+    with patch("link_tracer.scan.scan_directory", return_value=fake_result) as mock_scan:
         vault_index = scan_vault(vault_root)
 
     assert isinstance(vault_index, VaultIndex)
@@ -188,7 +183,7 @@ def test_resolve_links_multiple_calls_reuse_same_index() -> None:
         vault_graph = resolve_vault_links(vault_index)
 
     with (
-        patch("link_tracer.api.scan_directory") as mock_scan,
+        patch("link_tracer.scan.scan_directory") as mock_scan,
         patch.object(Path, "read_text", return_value="[[about]]"),
     ):
         resolve_links(vault_root / "home.md", vault_graph, vault_index)

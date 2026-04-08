@@ -16,27 +16,11 @@ from link_tracer.models import (
     VaultIndex,
 )
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
+from link_tracer.consts import _FILE_LINKS_KEY
 
 logger = structlog.get_logger(__name__)
 
 _POSSIBLE_EXTENSIONS = (".md", ".MD", ".markdown")
-_FILE_LINKS_KEY = "file_links"
-
-
-def _extract_file_links_callback(content: str) -> dict[str, object]:
-    """Extract serializable file links from note content."""
-    file_links = [
-        {
-            "link_type": link.link_type,
-            "target": link.target,
-            "alias": link.alias,
-            "heading": link.heading,
-            "blockid": link.blockid,
-        }
-        for link in _extract_file_links(content)
-    ]
-    return {_FILE_LINKS_KEY: file_links}
-
 
 def _entry_has_file_links_payload(entry: object) -> bool:
     """Return whether an entry contains a serialized file-links payload."""

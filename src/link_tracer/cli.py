@@ -11,7 +11,7 @@ import click
 import structlog
 from dotenv import dotenv_values, find_dotenv
 
-from link_tracer.api import resolve_links, resolve_vault_links, scan_vault
+from link_tracer import resolve_links, resolve_vault_links, scan_vault
 from link_tracer.logging import configure_debug_logging, get_console
 from link_tracer.models import ResolveOptions
 

@@ -1,4 +1,4 @@
-"""Public API boundary for link resolution."""
+"""Core vault scanning and index-building functions."""
 
 from __future__ import annotations
 
@@ -8,13 +8,9 @@ from typing import TYPE_CHECKING
 import structlog
 from matterify import scan_directory
 
-from link_tracer.models import VaultGraph, VaultIndex
-from link_tracer.resolve_links import resolve_links
-from link_tracer.resolve_vault_links import (
-    _extract_file_links_callback,
-    _resolve_link_to_file,
-    resolve_vault_links,
-)
+from link_tracer.models import VaultIndex
+from link_tracer.utils import _extract_file_links
+from link_tracer.consts import _FILE_LINKS_KEY
 
 logger = structlog.get_logger(__name__)
 
@@ -23,6 +19,19 @@ if TYPE_CHECKING:
 
     from matterify.models import AggregatedResult
 
+def _extract_file_links_callback(content: str) -> dict[str, object]:
+    """Extract serializable file links from note content."""
+    file_links = [
+        {
+            "link_type": link.link_type,
+            "target": link.target,
+            "alias": link.alias,
+            "heading": link.heading,
+            "blockid": link.blockid,
+        }
+        for link in _extract_file_links(content)
+    ]
+    return {_FILE_LINKS_KEY: file_links}
 
 def build_index(  # type: ignore[no-any-unimported]
     vault_root: Path,
@@ -76,10 +85,6 @@ def scan_vault(vault_root: Path) -> VaultIndex:
 
 
 __all__ = [
-    "VaultGraph",
     "build_index",
-    "resolve_links",
-    "resolve_vault_links",
     "scan_vault",
-    "_resolve_link_to_file",
 ]
