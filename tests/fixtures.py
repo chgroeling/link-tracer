@@ -175,13 +175,20 @@ def create_test_vault(tmp_path: Path) -> dict[str, Path]:
 
 
 @dataclass
+class FakeFileStats:
+    file_size: int | None = 0
+    modified_time: str | None = None
+    access_time: str | None = None
+
+
+@dataclass
 class FakeFileEntry:
     file_path: str = "note.md"
     frontmatter: dict = field(default_factory=dict)
     status: str = "ok"
     error: str | None = None
-    stats: object | None = None
-    file_hash: str | None = None
+    stats: object = field(default_factory=FakeFileStats)
+    file_hash: str = "deadbeef"
     links: object | None = None
 
 
