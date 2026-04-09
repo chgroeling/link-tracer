@@ -139,7 +139,6 @@ def test_trace_filters_files_to_matched_links(tmp_path: Path) -> None:
     assert result.exit_code == 0
     payload = json.loads(result.output)
     assert payload["metadata"]["total_files"] == 5
-    assert payload["metadata"]["errors"] == 0
     # Forward edge
     assert payload["edges"]["home.md"][0]["target_note"] == "about.md"
     assert payload["edges"]["home.md"][0]["resolved"] is True
@@ -159,7 +158,6 @@ def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
     assert result.exit_code == 0
     payload = json.loads(result.output)
     assert payload["metadata"]["total_files"] == 6
-    assert payload["metadata"]["errors"] == 0
     # Forward edges from about
     assert [edge["target_note"] for edge in payload["edges"]["about.md"]] == [
         "projects.md",

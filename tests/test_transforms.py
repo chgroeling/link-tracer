@@ -19,7 +19,6 @@ def _make_graph(edges: dict[str, list[LinkEdge]], total_files: int = 1) -> Vault
         vault_root="/vault",
         metadata=VaultGraphMetadata(
             total_files=total_files,
-            errors=0,
         ),
         edges=edges,
     )

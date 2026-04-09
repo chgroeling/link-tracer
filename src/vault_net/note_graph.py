@@ -105,12 +105,10 @@ def build_note_graph(
         if source_entry is None:
             metadata = VaultGraphMetadata(
                 total_files=1,
-                errors=0,
             )
         else:
             metadata = VaultGraphMetadata(
                 total_files=1,
-                errors=0 if source_entry.status == "ok" else 1,
             )
         duration = time.monotonic() - start
         logger.debug(
@@ -210,10 +208,8 @@ def build_note_graph(
 
     extra = 0 if source_entry else 1
     total = len(filtered_files) + extra
-    errors = sum(1 for f in filtered_files if f.status != "ok")
     metadata = VaultGraphMetadata(
         total_files=total,
-        errors=errors,
     )
 
     duration = time.monotonic() - start

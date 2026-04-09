@@ -125,7 +125,6 @@ class VaultGraphMetadata:
     """Metadata summary for a vault graph result."""
 
     total_files: int
-    errors: int
 
 
 
@@ -184,7 +183,7 @@ class VaultLayered:
     Attributes:
         source_note: Vault-relative path of the origin note (depth 0).
         vault_root: Absolute path to the vault root directory.
-        metadata: Graph-level summary (file count, errors, source directory).
+        metadata: Graph-level summary (file count).
         layers: Flat list of depth-tagged note entries, ordered by depth.
     """
 
