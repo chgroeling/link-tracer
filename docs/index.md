@@ -1,6 +1,6 @@
-# link-tracer
+# vault-net
 
-`link-tracer` is a Python project intended to trace links found in Obsidian markdown notes
+`vault-net` is a Python project intended to trace links found in Obsidian markdown notes
 back to note files on disk.
 
 ## Scope

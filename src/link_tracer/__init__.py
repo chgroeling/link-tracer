@@ -1,4 +1,4 @@
-"""Public package surface for link-tracer."""
+"""Public package surface for vault-net."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from link_tracer.scan import scan_vault
 from link_tracer.vault_graph import build_vault_graph
 
 try:
-    __version__ = version("link-tracer")
+    __version__ = version("vault-net")
 except PackageNotFoundError:
     __version__ = "0.1.0"
 

@@ -1,1 +1,1 @@
-"""Test suite for link-tracer."""
+"""Test suite for vault-net."""

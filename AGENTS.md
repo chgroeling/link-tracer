@@ -1,9 +1,8 @@
 # AGENTS.md
 
 ## Project description
-This repository provides the `link-tracer` package.
 
-It is intended to trace links in Obsidian notes back to source files on disk and to expose that data as JSON via CLI or as dictionaries via API.
+A command-line and Python library tool that scans an Obsidian vault, resolves all wikilinks and Markdown links to real files, and builds a structured representation of the vault’s notes and their relationships. It provides JSON and Python dataclass outputs for a raw vault index, per-note link graphs (with configurable depth, forward links, and backlinks), and a complete vault-wide graph.
 
 ## Project Structure
 ```text
@@ -51,7 +50,7 @@ project/
 - **Management:** `uv add <pkg>` (use `--dev` for dev); `uv remove <pkg>`; `uv pip list`.
 
 ### Execution & Lifecycle
-- **Run:** `uv run python -m link_tracer` or `uv run link-tracer`.
+- **Run:** `uv run python -m link_tracer` or `uv run vault-net`.
 - **Dist:** `uv build` (wheel/sdist).
 - **Publish:** `uv publish` (or GitHub workflow-based trusted publishing).
 
@@ -116,32 +115,8 @@ Extracts Obsidian-style wikilinks, Markdown links, and plain URLs from text. Use
 - `extract_links()` raises `TypeError` for unsupported source types or non-`str` `.read()` results
 - `Link.as_path` raises `ValueError` when the target is a URL
 
-### structlog (>=25.5.0)
-Structured logging library. Used for consistent, machine-readable log output via `logging.py`.
 
-**Usage rules:**
-- Init: Use `structlog.get_logger(__name__)`. Never `logging.getLogger()`.
-- Context: Use kwargs: `logger.debug("msg", k=v)`. Never `extra={...}` (crashes on reserved keys like `name`).
-- Configure: Use `configure_debug_logging(enabled)` from `logging.py`. Uses `logging.CRITICAL` (50) for no-op. Avoid `logging.CRITICAL + 1` (causes `KeyError`).
-
-**Public API:**
-- `get_logger(*args, **initial_values)` — Get a configured logger; returns a `BoundLogger`
-- `configure(processors=None, wrapper_class=None, context_class=None, logger_factory=None, cache_logger_on_first_use=None)` — Set global defaults for all loggers
-- `BoundLogger` — Immutable context carrier with `bind(**new_values)`, `unbind(*keys)`, `new(**new_values)` methods
-- Logging methods: `debug()`, `info()`, `warning()`, `error()`, `critical()`, `log(level, **kw)`
-- `make_filtering_bound_logger(min_level)` — Create a fast, level-filtering logger (supports async variants: `ainfo()`, `adebug()`, etc.)
-- `PrintLogger` — Simple logger that prints to stdout/stderr (useful for CLI)
-
-### rich
-Console output library. Used for verbose CLI output via `logging.py`.
-
-**Usage:**
-- `get_console(verbose)` — Returns `rich.Console()`. Verbose writes to stdout for `CliRunner` capture; otherwise `quiet=True`.
-
-### click (>=8.3.2)
-Command-line interface toolkit. Used to build the `link-tracer` CLI.
-
-**CLI structure:** `link-tracer` is a Click group with two subcommands.
+## Command line interface
 
 **Subcommand `note-graph`:** Trace links for a single note.
 - `NOTE` (positional): Path to the note file (must exist)

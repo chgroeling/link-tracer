@@ -1,3 +1,3 @@
-# link-tracer
+# vault-net
 
 A command-line and Python library tool that scans an Obsidian vault, resolves all wikilinks and Markdown links to real files, and builds a structured representation of the vault’s notes and their relationships. It provides JSON and Python dataclass outputs for a raw vault index, per-note link graphs (with configurable depth, forward links, and backlinks), and a complete vault-wide graph.

@@ -1,5 +1,5 @@
 [project]
-name = "link-tracer"
+name = "vault-net"
 version = "0.1.0"
 description = "Trace Obsidian note links to filesystem sources via CLI JSON or Python API dict output."
 readme = "README.md"
@@ -40,12 +40,12 @@ authors = [
 
 
 [project.urls]
-Homepage = "https://github.com/chgroeling/link-tracer"
-Repository = "https://github.com/chgroeling/link-tracer"
-Issues = "https://github.com/chgroeling/link-tracer/issues"
+Homepage = "https://github.com/chgroeling/vault-net"
+Repository = "https://github.com/chgroeling/vault-net"
+Issues = "https://github.com/chgroeling/vault-net/issues"
 
 [project.scripts]
-link-tracer = "link_tracer.cli:main"
+vault-net = "link_tracer.cli:main"
 
 [build-system]
 requires = ["hatchling"]

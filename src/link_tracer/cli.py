@@ -1,4 +1,4 @@
-"""CLI entry point for link-tracer."""
+"""CLI entry point for vault-net."""
 
 from __future__ import annotations
 
