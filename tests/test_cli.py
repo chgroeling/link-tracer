@@ -389,7 +389,16 @@ def test_note_graph_format_layered_depth_zero_returns_source_only(tmp_path: Path
     runner = CliRunner()
     result = runner.invoke(
         main,
-        ["note-graph", str(note), "--vault-root", str(vault), "--format", "layered", "--depth", "0"],
+        [
+            "note-graph",
+            str(note),
+            "--vault-root",
+            str(vault),
+            "--format",
+            "layered",
+            "--depth",
+            "0",
+        ],
     )
 
     assert result.exit_code == 0

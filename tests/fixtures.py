@@ -189,7 +189,7 @@ class FakeFileEntry:
     error: str | None = None
     stats: object = field(default_factory=FakeFileStats)
     file_hash: str = "deadbeef"
-    links: object | None = None
+    custom_data: object | None = None
 
 
 @dataclass

@@ -29,3 +29,36 @@ def test_scan_vault_delegates_to_scan_directory() -> None:
     assert len(vault_index.files) == 1
     callback = mock_scan.call_args.kwargs.get("callback")
     assert callable(callback)
+
+
+def test_scan_vault_converts_custom_data_to_vault_links() -> None:
+    """scan_vault() converts matterify custom_data dicts into VaultLink objects."""
+    vault_root = Path("/tmp/vault")  # noqa: S108
+    fake_files = [
+        FakeFileEntry(
+            file_path="note.md",
+            custom_data=[
+                {
+                    "link_type": "WIKILINK",
+                    "target": "other",
+                    "alias": None,
+                    "heading": "Section",
+                    "blockid": None,
+                },
+            ],
+        ),
+    ]
+    fake_result = FakeScanResults(
+        metadata=FakeScanMetadata(root=str(vault_root)),
+        files=fake_files,
+    )
+
+    with patch("link_tracer.scan.scan_directory", return_value=fake_result):
+        vault_index = scan_vault(vault_root)
+
+    assert vault_index.files[0].links is not None
+    assert len(vault_index.files[0].links) == 1
+    link = vault_index.files[0].links[0]
+    assert link.link_type == "WIKILINK"
+    assert link.target == "other"
+    assert link.heading == "Section"

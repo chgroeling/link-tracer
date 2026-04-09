@@ -125,7 +125,9 @@ def note_graph(
     )
     vault_root = resolve_vault_root(vault_root)
     logger.info("Tracing links", note=str(note))
-    vault_index = scan_vault(vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes)
+    vault_index = scan_vault(
+        vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
+    )
     vault_graph = build_vault_graph(vault_index=vault_index)
     source_note, graph = build_note_graph(
         note_path=note, vault_graph=vault_graph, vault_index=vault_index, depth=depth
@@ -184,7 +186,9 @@ def vault_graph(
     logger.debug("Starting vault link tracer", vault_root=str(vault_root) if vault_root else None)
     vault_root = resolve_vault_root(vault_root)
     logger.info("Tracing vault links", vault_root=str(vault_root))
-    vault_index = scan_vault(vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes)
+    vault_index = scan_vault(
+        vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
+    )
     response = build_vault_graph(vault_index=vault_index)
     payload = json.dumps(asdict(response), indent=2)
     emit_json_output(payload, output)
