@@ -27,9 +27,6 @@ def test_build_vault_index_constructs_from_scan_result() -> None:
     assert vault_index.vault_root == vault_root
     assert vault_index.source_directory == str(vault_root)
     assert len(vault_index.files) == 2
-    assert "home.md" in vault_index.name_to_file
-    assert "home" in vault_index.stem_to_file
-    assert "home.md" in vault_index.relative_path_to_file
 
 
 def test_scan_vault_delegates_to_scan_directory() -> None:

@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
     from matterify.models import ScanResults
 
+
 def _extract_file_links_callback(content: str) -> list[dict[str, object]]:
     """Extract serializable file links from note content."""
     return [
@@ -30,6 +31,7 @@ def _extract_file_links_callback(content: str) -> list[dict[str, object]]:
         }
         for link in _extract_file_links(content)
     ]
+
 
 def build_index(  # type: ignore[no-any-unimported]
     vault_root: Path,
@@ -45,13 +47,13 @@ def build_index(  # type: ignore[no-any-unimported]
         VaultIndex with prebuilt lookup maps.
     """
     start = time.monotonic()
-    logger.debug("build_vault_graph.start")
+    logger.debug("build_vault_index.start")
 
     index = VaultIndex.from_scan_result(vault_root, scan_result)
 
     duration = time.monotonic() - start
     logger.debug(
-        "build_vault_graph.complete",
+        "build_vault_index.complete",
         duration=round(duration, 4),
         file_count=len(index.files),
     )

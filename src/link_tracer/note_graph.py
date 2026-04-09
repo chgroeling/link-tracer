@@ -87,14 +87,16 @@ def build_note_graph(
     resolved_vault = Path(vault_graph.vault_root).resolve()
     source_note = _path_for_response(resolved_note, resolved_vault)
 
-    name_to_file = vault_index.name_to_file
-    stem_to_file = vault_index.stem_to_file
-    relative_path_to_file = vault_index.relative_path_to_file
+    # Build lookup maps locally
+    name_to_file: dict[str, Path] = {}
+    stem_to_file: dict[str, Path] = {}
+    relative_path_to_file: dict[str, Path] = {}
+    for file_path in [Path(f.file_path) for f in vault_index.files]:
+        name_to_file.setdefault(file_path.name.lower(), file_path)
+        stem_to_file.setdefault(file_path.stem.lower(), file_path)
+        relative_path_to_file.setdefault(_normalize_lookup_key(file_path), file_path)
 
-    files_by_key = {
-        _normalize_lookup_key(Path(str(fe.file_path))): fe
-        for fe in vault_index.files
-    }
+    files_by_key = {_normalize_lookup_key(Path(str(fe.file_path))): fe for fe in vault_index.files}
 
     source_entry = files_by_key.get(_normalize_lookup_key(Path(source_note)))
 
@@ -199,11 +201,7 @@ def build_note_graph(
                         queue.append((backlink_source, current_depth + 1))
 
         matched_paths = {_normalize_lookup_key(Path(path)) for path in matched_notes}
-        filtered_files = [
-            files_by_key[key]
-            for key in matched_paths
-            if key in files_by_key
-        ]
+        filtered_files = [files_by_key[key] for key in matched_paths if key in files_by_key]
 
         if source_entry and source_entry not in filtered_files:
             filtered_files = [source_entry, *filtered_files]

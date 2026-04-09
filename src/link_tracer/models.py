@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 from typing import TYPE_CHECKING
-
-from link_tracer.utils import _normalize_lookup_key
 
 if TYPE_CHECKING:
     from matterify.models import FileEntry, ScanResults
@@ -74,34 +72,11 @@ class VaultGraph:
 
 @dataclass(frozen=True, slots=True)
 class VaultIndex:  # type: ignore[no-any-unimported]
-    """Immutable vault index with prebuilt lookup maps."""
+    """Immutable vault index with file entries."""
 
     vault_root: Path
     files: list[FileEntry]  # type: ignore[no-any-unimported]
     source_directory: str
-    name_to_file: dict[str, Path]
-    stem_to_file: dict[str, Path]
-    relative_path_to_file: dict[str, Path]
-
-    @staticmethod
-    def _build_vault_lookups(
-        vault_files: list[Path],
-    ) -> tuple[dict[str, Path], dict[str, Path], dict[str, Path]]:
-        """Build case-insensitive lookup maps for vault files."""
-        name_to_file: dict[str, Path] = {}
-        stem_to_file: dict[str, Path] = {}
-        relative_path_to_file: dict[str, Path] = {}
-
-        for file_path in vault_files:
-            name_key = file_path.name.lower()
-            stem_key = file_path.stem.lower()
-            relative_key = _normalize_lookup_key(file_path)
-
-            name_to_file.setdefault(name_key, file_path)
-            stem_to_file.setdefault(stem_key, file_path)
-            relative_path_to_file.setdefault(relative_key, file_path)
-
-        return name_to_file, stem_to_file, relative_path_to_file
 
     @classmethod
     def from_scan_result(  # type: ignore[no-any-unimported]
@@ -116,16 +91,10 @@ class VaultIndex:  # type: ignore[no-any-unimported]
             scan_result: ScanResults from matterify.scan_directory().
 
         Returns:
-            VaultIndex with prebuilt lookup maps.
+            VaultIndex with file entries.
         """
-        vault_files = [Path(f.file_path) for f in scan_result.files]
-        name_to_file, stem_to_file, relative_path_to_file = cls._build_vault_lookups(vault_files)
-
         return cls(
             vault_root=vault_root,
             files=scan_result.files,
             source_directory=scan_result.metadata.root,
-            name_to_file=name_to_file,
-            stem_to_file=stem_to_file,
-            relative_path_to_file=relative_path_to_file,
         )

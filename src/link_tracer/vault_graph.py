@@ -19,10 +19,12 @@ from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_
 
 logger = structlog.get_logger(__name__)
 
+
 def _entry_has_file_links_payload(entry: object) -> bool:
     """Return whether an entry contains a serialized file-links payload."""
     custom_data = getattr(entry, "custom_data", None)
     return isinstance(custom_data, list)
+
 
 def _entry_file_links(entry: object) -> list[ExtractedLink]:
     """Read serialized file links from a scan entry custom_data payload."""
@@ -63,7 +65,10 @@ def _entry_file_links(entry: object) -> list[ExtractedLink]:
 
 def _resolve_link_to_file(
     link_path: Path,
-    vault_index: VaultIndex,
+    *,
+    name_to_file: dict[str, Path],
+    stem_to_file: dict[str, Path],
+    relative_path_to_file: dict[str, Path],
 ) -> Path | None:
     """Resolve a file-like link target to a scanned vault file."""
     target_str = str(link_path).strip()
@@ -74,11 +79,11 @@ def _resolve_link_to_file(
     target_path = Path(target_str)
     target_key = _normalize_lookup_key(target_path)
 
-    path_match = vault_index.relative_path_to_file.get(target_key)
+    path_match = relative_path_to_file.get(target_key)
     if path_match:
         return path_match
 
-    direct_match = vault_index.name_to_file.get(target_path.name.lower())
+    direct_match = name_to_file.get(target_path.name.lower())
     if direct_match:
         return direct_match
 
@@ -86,26 +91,32 @@ def _resolve_link_to_file(
         candidate = (
             target_path.with_suffix(ext) if target_path.suffix else Path(f"{target_str}{ext}")
         )
-        candidate_path_match = vault_index.relative_path_to_file.get(
-            _normalize_lookup_key(candidate)
-        )
+        candidate_path_match = relative_path_to_file.get(_normalize_lookup_key(candidate))
         if candidate_path_match:
             return candidate_path_match
 
-        candidate_match = vault_index.name_to_file.get(candidate.name.lower())
+        candidate_match = name_to_file.get(candidate.name.lower())
         if candidate_match:
             return candidate_match
 
-    return vault_index.stem_to_file.get(target_path.stem.lower())
+    return stem_to_file.get(target_path.stem.lower())
 
 
 def _resolve_extracted_link(
     extracted_link: ExtractedLink,
-    vault_index: VaultIndex,
     resolved_vault: Path,
+    *,
+    name_to_file: dict[str, Path],
+    stem_to_file: dict[str, Path],
+    relative_path_to_file: dict[str, Path],
 ) -> tuple[LinkEdge, Path | None]:
     """Resolve one extracted link into an edge and optional target path."""
-    matched = _resolve_link_to_file(Path(extracted_link.target), vault_index)
+    matched = _resolve_link_to_file(
+        Path(extracted_link.target),
+        name_to_file=name_to_file,
+        stem_to_file=stem_to_file,
+        relative_path_to_file=relative_path_to_file,
+    )
     if matched is None:
         return (
             LinkEdge(
@@ -133,6 +144,15 @@ def build_vault_graph(vault_index: VaultIndex) -> VaultGraph:
     start = time.monotonic()
     logger.debug("build_vault_graph.start", total_files=len(vault_index.files))
 
+    # Build lookup maps once
+    name_to_file: dict[str, Path] = {}
+    stem_to_file: dict[str, Path] = {}
+    relative_path_to_file: dict[str, Path] = {}
+    for file_path in [Path(f.file_path) for f in vault_index.files]:
+        name_to_file.setdefault(file_path.name.lower(), file_path)
+        stem_to_file.setdefault(file_path.stem.lower(), file_path)
+        relative_path_to_file.setdefault(_normalize_lookup_key(file_path), file_path)
+
     resolved_vault = vault_index.vault_root.resolve()
     edges: dict[str, list[LinkEdge]] = {}
 
@@ -148,7 +168,13 @@ def build_vault_graph(vault_index: VaultIndex) -> VaultGraph:
         outgoing_links: list[LinkEdge] = []
 
         for extracted_link in extracted_links:
-            edge, _ = _resolve_extracted_link(extracted_link, vault_index, resolved_vault)
+            edge, _ = _resolve_extracted_link(
+                extracted_link,
+                resolved_vault,
+                name_to_file=name_to_file,
+                stem_to_file=stem_to_file,
+                relative_path_to_file=relative_path_to_file,
+            )
             outgoing_links.append(edge)
 
         if outgoing_links:
