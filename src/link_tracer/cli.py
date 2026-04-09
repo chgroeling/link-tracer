@@ -70,6 +70,7 @@ def main() -> None:
     help="Vault root directory (overrides VAULT_ROOT env and .vault file)",
 )
 @click.option(
+    "-d",
     "--depth",
     type=int,
     default=1,
@@ -91,6 +92,19 @@ def main() -> None:
     default="edges",
     help="Output graph representation (edges: full edge dict, layered: BFS depth layers)",
 )
+@click.option(
+    "-e",
+    "--exclude-dir",
+    "extra_exclude_dir",
+    multiple=True,
+    metavar="DIR",
+    help="Additional directory name to exclude from traversal (repeatable)",
+)
+@click.option(
+    "--no-default-excludes",
+    is_flag=True,
+    help="Disable built-in default exclusions; use only --exclude-dir entries",
+)
 def note_graph(
     note: Path,
     vault_root: Path | None,
@@ -99,6 +113,8 @@ def note_graph(
     debug: bool,
     verbose: bool,
     fmt: str,
+    extra_exclude_dir: tuple[str, ...],
+    no_default_excludes: bool,
 ) -> int:
     """Trace links for a single note."""
     configure_debug_logging(debug)
@@ -109,7 +125,7 @@ def note_graph(
     )
     vault_root = resolve_vault_root(vault_root)
     logger.info("Tracing links", note=str(note))
-    vault_index = scan_vault(vault_root)
+    vault_index = scan_vault(vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes)
     vault_graph = build_vault_graph(vault_index=vault_index)
     source_note, graph = build_note_graph(
         note_path=note, vault_graph=vault_graph, vault_index=vault_index, depth=depth
@@ -140,7 +156,27 @@ def note_graph(
 )
 @click.option("--debug", is_flag=True, help="Enable debug-level structured logging to stderr")
 @click.option("--verbose", is_flag=True, help="Enable verbose console output")
-def vault_graph(vault_root: Path | None, output: Path | None, debug: bool, verbose: bool) -> int:
+@click.option(
+    "-e",
+    "--exclude-dir",
+    "extra_exclude_dir",
+    multiple=True,
+    metavar="DIR",
+    help="Additional directory name to exclude from traversal (repeatable)",
+)
+@click.option(
+    "--no-default-excludes",
+    is_flag=True,
+    help="Disable built-in default exclusions; use only --exclude-dir entries",
+)
+def vault_graph(
+    vault_root: Path | None,
+    output: Path | None,
+    debug: bool,
+    verbose: bool,
+    extra_exclude_dir: tuple[str, ...],
+    no_default_excludes: bool,
+) -> int:
     """Trace links for every note in the vault."""
     configure_debug_logging(debug)
     console = get_console(verbose)
@@ -148,7 +184,7 @@ def vault_graph(vault_root: Path | None, output: Path | None, debug: bool, verbo
     logger.debug("Starting vault link tracer", vault_root=str(vault_root) if vault_root else None)
     vault_root = resolve_vault_root(vault_root)
     logger.info("Tracing vault links", vault_root=str(vault_root))
-    vault_index = scan_vault(vault_root)
+    vault_index = scan_vault(vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes)
     response = build_vault_graph(vault_index=vault_index)
     payload = json.dumps(asdict(response), indent=2)
     emit_json_output(payload, output)

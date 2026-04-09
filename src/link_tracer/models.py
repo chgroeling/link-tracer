@@ -72,7 +72,7 @@ class VaultFile:
     """
 
     file_path: str
-    frontmatter: dict
+    frontmatter: dict | None
     status: str
     error: str | None
     stats: VaultFileStats

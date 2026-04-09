@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import structlog
 from matterify import scan_directory
+from matterify.constants import BLACKLIST
 
 from link_tracer.models import VaultFile, VaultFileStats, VaultIndex, VaultIndexMetadata, VaultLink
 from link_tracer.utils import _extract_file_links
@@ -89,7 +90,6 @@ def _convert_scan_to_index(
             if not links:
                 links = None
         # These are guaranteed non-None: compute_frontmatter/compute_stats/compute_hash=True
-        assert entry.frontmatter is not None
         assert entry.stats is not None
         assert entry.file_hash is not None
         vault_file = VaultFile(
@@ -114,11 +114,21 @@ def _convert_scan_to_index(
     )
 
 
-def scan_vault(vault_root: Path) -> VaultIndex:
+def scan_vault(
+    vault_root: Path,
+    extra_exclude_dir: tuple[str, ...] = (),
+    no_default_excludes: bool = False,
+) -> VaultIndex:
     """Scan vault directory and build a VaultIndex.
 
     Args:
         vault_root: Root directory of the vault.
+        extra_exclude: Additional directory names to exclude from traversal,
+            added on top of the default exclusions (`.git`, `.obsidian`,
+            `__pycache__`, `.venv`, `venv`, `node_modules`, `.mypy_cache`,
+            `.pytest_cache`, `.ruff_cache`).
+        no_default_excludes: When True, skip the built-in default exclusions
+            and use only the entries in `extra_exclude`.
 
     Returns:
         VaultIndex with scan results and prebuilt lookup maps.
@@ -126,8 +136,10 @@ def scan_vault(vault_root: Path) -> VaultIndex:
     start = time.monotonic()
     logger.debug("scan_vault.start", vault_root=str(vault_root))
 
+    base = () if no_default_excludes else BLACKLIST
     scan_result = scan_directory(
         vault_root,
+        exclude=base + extra_exclude_dir,
         compute_hash=True,
         compute_stats=True,
         compute_frontmatter=True,
