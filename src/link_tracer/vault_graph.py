@@ -22,18 +22,18 @@ logger = structlog.get_logger(__name__)
 
 def _entry_has_file_links_payload(entry: object) -> bool:
     """Return whether an entry contains a serialized file-links payload."""
-    custom_data = getattr(entry, "custom_data", None)
-    return isinstance(custom_data, list)
+    found_links = getattr(entry, "found_links", None)
+    return isinstance(found_links, list)
 
 
 def _entry_file_links(entry: object) -> list[ExtractedLink]:
-    """Read serialized file links from a scan entry custom_data payload."""
-    custom_data = getattr(entry, "custom_data", None)
-    if not isinstance(custom_data, list):
+    """Read serialized file links from a scan entry found_links payload."""
+    found_links = getattr(entry, "found_links", None)
+    if not isinstance(found_links, list):
         return []
 
     links: list[ExtractedLink] = []
-    for raw_link in custom_data:
+    for raw_link in found_links:
         if not isinstance(raw_link, dict):
             continue
 
@@ -184,7 +184,7 @@ def build_vault_graph(vault_index: VaultIndex) -> VaultGraph:
     total = len(files)
     with_fm = sum(1 for f in files if f.frontmatter)
     metadata = ResolveMetadata(
-        source_directory=vault_index.source_directory,
+        source_directory=vault_index.metadata.root,
         total_files=total,
         files_with_frontmatter=with_fm,
         files_without_frontmatter=total - with_fm,

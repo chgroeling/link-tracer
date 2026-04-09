@@ -180,17 +180,24 @@ class FakeFileEntry:
     frontmatter: dict = field(default_factory=dict)
     status: str = "ok"
     error: str | None = None
+    stats: object | None = None
     file_hash: str | None = None
-    custom_data: object | None = None
+    found_links: object | None = None
 
 
 @dataclass
 class FakeScanMetadata:
     root: str = "/tmp/vault"  # noqa: S108
+    total_files: int = 0
+    files_with_frontmatter: int = 0
+    files_without_frontmatter: int = 0
+    errors: int = 0
+    scan_duration_seconds: float = 0.0
+    avg_duration_per_file_ms: float = 0.0
+    throughput_files_per_second: float = 0.0
 
 
 @dataclass
 class FakeAggregatedResult:
     metadata: FakeScanMetadata = field(default_factory=FakeScanMetadata)
     files: list[FakeFileEntry] = field(default_factory=list)
-

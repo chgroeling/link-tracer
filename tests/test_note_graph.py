@@ -7,7 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from link_tracer import build_index, build_note_graph, build_vault_graph, scan_vault
+from link_tracer import build_note_graph, build_vault_graph, scan_vault
+from link_tracer.scan import _convert_scan_to_index
 from tests.fixtures import FakeAggregatedResult, FakeFileEntry, FakeScanMetadata
 
 
@@ -23,7 +24,7 @@ def test_build_note_graph_uses_prebuilt_index() -> None:
         metadata=FakeScanMetadata(root=str(vault_root)),
         files=files,
     )
-    vault_index = build_index(vault_root, scan_result)
+    vault_index = _convert_scan_to_index(vault_root, scan_result)
     with patch.object(Path, "read_text", return_value="[[about]]"):
         vault_graph = build_vault_graph(vault_index)
 
@@ -48,7 +49,7 @@ def test_build_note_graph_multiple_calls_reuse_same_index() -> None:
         metadata=FakeScanMetadata(root=str(vault_root)),
         files=files,
     )
-    vault_index = build_index(vault_root, scan_result)
+    vault_index = _convert_scan_to_index(vault_root, scan_result)
     with patch.object(Path, "read_text", return_value="[[about]]"):
         vault_graph = build_vault_graph(vault_index)
 
@@ -97,9 +98,7 @@ def test_build_note_graph_depth_zero_returns_source_only(tmp_path: Path) -> None
 
     vault_index = scan_vault(vault_root)
     vault_response = build_vault_graph(vault_index)
-    _, graph = build_note_graph(
-        vault_root / "home.md", vault_response, vault_index, depth=0
-    )
+    _, graph = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=0)
 
     assert graph.metadata.total_files == 1
     assert graph.edges == {}
@@ -115,9 +114,7 @@ def test_build_note_graph_depth_one_returns_direct_links(tmp_path: Path) -> None
 
     vault_index = scan_vault(vault_root)
     vault_response = build_vault_graph(vault_index)
-    _, graph = build_note_graph(
-        vault_root / "home.md", vault_response, vault_index, depth=1
-    )
+    _, graph = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=1)
 
     assert graph.metadata.total_files == 2
     assert set(graph.edges) == {"home.md"}
@@ -135,9 +132,7 @@ def test_build_note_graph_uses_indexed_links_without_file_reads(tmp_path: Path) 
     vault_response = build_vault_graph(vault_index)
 
     with patch.object(Path, "read_text", side_effect=AssertionError("unexpected file read")):
-        _, graph = build_note_graph(
-            vault_root / "home.md", vault_response, vault_index, depth=1
-        )
+        _, graph = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=1)
 
     assert set(graph.edges) == {"home.md"}
     assert [edge.target_note for edge in graph.edges["home.md"]] == ["about.md"]
@@ -156,9 +151,7 @@ def test_build_note_graph_depth_two_returns_children_links(tmp_path: Path) -> No
 
     vault_index = scan_vault(vault_root)
     vault_response = build_vault_graph(vault_index)
-    _, graph = build_note_graph(
-        vault_root / "home.md", vault_response, vault_index, depth=2
-    )
+    _, graph = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=2)
 
     assert graph.metadata.total_files == 3
     assert set(graph.edges) == {"home.md", "about.md"}
@@ -212,9 +205,7 @@ def test_build_note_graph_includes_unresolved_edges(tmp_path: Path) -> None:
 
     vault_index = scan_vault(vault_root)
     vault_response = build_vault_graph(vault_index)
-    _, graph = build_note_graph(
-        vault_root / "home.md", vault_response, vault_index, depth=1
-    )
+    _, graph = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=1)
 
     assert set(graph.edges) == {"home.md"}
     assert graph.edges["home.md"][0].resolved is True

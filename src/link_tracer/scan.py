@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import structlog
 from matterify import scan_directory
 
-from link_tracer.models import VaultIndex
+from link_tracer.models import VaultFile, VaultIndex, VaultIndexMetadata
 from link_tracer.utils import _extract_file_links
 
 logger = structlog.get_logger(__name__)
@@ -33,31 +33,57 @@ def _extract_file_links_callback(content: str) -> list[dict[str, object]]:
     ]
 
 
-def build_index(  # type: ignore[no-any-unimported]
+def _convert_scan_to_index(
     vault_root: Path,
     scan_result: ScanResults,
 ) -> VaultIndex:
-    """Build a VaultIndex from an existing scan result.
+    """Convert a matterify scan result to a VaultIndex.
+
+    This internal function transforms matterify's ScanResults into
+    our local VaultIndex type, converting FileEntry objects to
+    VaultFile and ScanMetadata to VaultIndexMetadata.
 
     Args:
         vault_root: Root directory of the vault.
         scan_result: ScanResults from matterify.scan_directory().
 
     Returns:
-        VaultIndex with prebuilt lookup maps.
+        VaultIndex with converted file entries and metadata.
     """
-    start = time.monotonic()
-    logger.debug("build_vault_index.start")
-
-    index = VaultIndex.from_scan_result(vault_root, scan_result)
-
-    duration = time.monotonic() - start
-    logger.debug(
-        "build_vault_index.complete",
-        duration=round(duration, 4),
-        file_count=len(index.files),
+    # Convert matterify ScanMetadata to VaultIndexMetadata
+    meta = scan_result.metadata
+    metadata = VaultIndexMetadata(
+        root=meta.root,
+        total_files=meta.total_files,
+        files_with_frontmatter=meta.files_with_frontmatter,
+        files_without_frontmatter=meta.files_without_frontmatter,
+        errors=meta.errors,
+        scan_duration_seconds=meta.scan_duration_seconds,
+        avg_duration_per_file_ms=meta.avg_duration_per_file_ms,
+        throughput_files_per_second=meta.throughput_files_per_second,
     )
-    return index
+
+    # Convert matterify FileEntry list to VaultFile list
+    files: list[VaultFile] = []
+    for entry in scan_result.files:
+        # Access custom_data from matterify and map to found_links
+        raw_links = getattr(entry, "custom_data", None)
+        vault_file = VaultFile(
+            file_path=entry.file_path,
+            frontmatter=entry.frontmatter,
+            status=entry.status,
+            error=entry.error,
+            stats=entry.stats,
+            file_hash=entry.file_hash,
+            found_links=raw_links if isinstance(raw_links, list) else None,
+        )
+        files.append(vault_file)
+
+    return VaultIndex(
+        vault_root=vault_root,
+        metadata=metadata,
+        files=files,
+    )
 
 
 def scan_vault(vault_root: Path) -> VaultIndex:
@@ -73,8 +99,9 @@ def scan_vault(vault_root: Path) -> VaultIndex:
     logger.debug("scan_vault.start", vault_root=str(vault_root))
 
     scan_result = scan_directory(vault_root, callback=_extract_file_links_callback)
-    index = build_index(vault_root, scan_result)
 
+    # Inline build_index logic
+    index = _convert_scan_to_index(vault_root, scan_result)
     duration = time.monotonic() - start
     logger.debug(
         "scan_vault.complete",
@@ -85,6 +112,5 @@ def scan_vault(vault_root: Path) -> VaultIndex:
 
 
 __all__ = [
-    "build_index",
     "scan_vault",
 ]

@@ -3,11 +3,61 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path  # noqa: TC003
-from typing import TYPE_CHECKING
+from pathlib import Path
 
-if TYPE_CHECKING:
-    from matterify.models import FileEntry, ScanResults
+
+@dataclass(frozen=True, slots=True)
+class VaultIndexMetadata:
+    """Metadata summary for a vault index operation.
+
+    Mirrors matterify.models.ScanMetadata but uses local types.
+
+    Attributes:
+        root: Root directory path of the indexed vault.
+        total_files: Total number of files scanned.
+        files_with_frontmatter: Count of files containing YAML frontmatter.
+        files_without_frontmatter: Count of files without YAML frontmatter.
+        errors: Number of files that encountered errors during scanning.
+        scan_duration_seconds: Total time taken for the scan.
+        avg_duration_per_file_ms: Average processing time per file in milliseconds.
+        throughput_files_per_second: File processing rate.
+    """
+
+    root: str
+    total_files: int
+    files_with_frontmatter: int
+    files_without_frontmatter: int
+    errors: int
+    scan_duration_seconds: float
+    avg_duration_per_file_ms: float
+    throughput_files_per_second: float
+
+
+@dataclass(frozen=True, slots=True)
+class VaultFile:
+    """Represents a scanned file in the vault.
+
+    Mirrors matterify.models.FileEntry but uses local types and
+    renames custom_data to found_links.
+
+    Attributes:
+        file_path: Path to the file relative to the vault root.
+        frontmatter: Extracted YAML frontmatter as a dictionary.
+        status: Scan status string (e.g., "ok").
+        error: Error message if status is not "ok", otherwise None.
+        stats: Optional file statistics object.
+        file_hash: Optional hash of the file contents.
+        found_links: Optional list of extracted links from the file content.
+            Renamed from custom_data in matterify.
+    """
+
+    file_path: str
+    frontmatter: dict
+    status: str
+    error: str | None
+    stats: object | None
+    file_hash: str | None
+    found_links: list[dict] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,30 +121,23 @@ class VaultGraph:
 
 
 @dataclass(frozen=True, slots=True)
-class VaultIndex:  # type: ignore[no-any-unimported]
-    """Immutable vault index with file entries."""
+class VaultIndex:
+    """Immutable vault index with file entries and metadata.
+
+    Attributes:
+        vault_root: Root directory of the vault as a Path.
+        metadata: Summary metadata about the indexing operation.
+        files: List of scanned vault files.
+    """
 
     vault_root: Path
-    files: list[FileEntry]  # type: ignore[no-any-unimported]
-    source_directory: str
+    metadata: VaultIndexMetadata
+    files: list[VaultFile]
 
-    @classmethod
-    def from_scan_result(  # type: ignore[no-any-unimported]
-        cls,
-        vault_root: Path,
-        scan_result: ScanResults,
-    ) -> VaultIndex:
-        """Build a VaultIndex from a matterify scan result.
+    @property
+    def source_directory(self) -> str:
+        """Return the source directory path from metadata.
 
-        Args:
-            vault_root: Root directory of the vault.
-            scan_result: ScanResults from matterify.scan_directory().
-
-        Returns:
-            VaultIndex with file entries.
+        Backwards-compatible alias for metadata.root.
         """
-        return cls(
-            vault_root=vault_root,
-            files=scan_result.files,
-            source_directory=scan_result.metadata.root,
-        )
+        return self.metadata.root
