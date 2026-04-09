@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import structlog
 from matterify import scan_directory
@@ -17,7 +17,7 @@ from vault_net.models import VaultFile, VaultFileStats, VaultIndex, VaultIndexMe
 logger = structlog.get_logger(__name__)
 
 if TYPE_CHECKING:
-    from matterify.models import ScanResults
+    from matterify.models import FileStats, ScanMetadata, ScanResults
 
 
 def _generate_slug(filename: str, slug_counts: dict[str, int]) -> str:
@@ -68,15 +68,15 @@ def _convert_scan_to_index(
         VaultIndex with converted file entries and metadata.
     """
     # Convert matterify ScanMetadata to VaultIndexMetadata
-    meta = scan_result.metadata
+    meta = cast("ScanMetadata", scan_result.metadata)
     # These are guaranteed non-None because compute_frontmatter=True
-    assert meta.files_with_frontmatter is not None
-    assert meta.files_without_frontmatter is not None
+    files_with_frontmatter = cast("int", meta.files_with_frontmatter)
+    files_without_frontmatter = cast("int", meta.files_without_frontmatter)
     metadata = VaultIndexMetadata(
         root=meta.root,
         total_files=meta.total_files,
-        files_with_frontmatter=meta.files_with_frontmatter,
-        files_without_frontmatter=meta.files_without_frontmatter,
+        files_with_frontmatter=files_with_frontmatter,
+        files_without_frontmatter=files_without_frontmatter,
         errors=meta.errors,
         scan_duration_seconds=meta.scan_duration_seconds,
         avg_duration_per_file_ms=meta.avg_duration_per_file_ms,
@@ -91,8 +91,8 @@ def _convert_scan_to_index(
         raw_links = getattr(entry, "custom_data", None) or []
 
         # These are guaranteed non-None: compute_frontmatter/compute_stats/compute_hash=True
-        assert entry.stats is not None
-        assert entry.file_hash is not None
+        entry_stats = cast("FileStats", entry.stats)
+        entry_hash = cast("str", entry.file_hash)
 
         # Generate unique slug from filename (max SLUG_LENGTH chars)
         filename = Path(entry.file_path).name
@@ -104,11 +104,11 @@ def _convert_scan_to_index(
             status=entry.status,
             error=entry.error,
             stats=VaultFileStats(
-                file_size=entry.stats.file_size,
-                modified_time=entry.stats.modified_time,
-                access_time=entry.stats.access_time,
+                file_size=entry_stats.file_size,
+                modified_time=entry_stats.modified_time,
+                access_time=entry_stats.access_time,
             ),
-            file_hash=entry.file_hash,
+            file_hash=entry_hash,
             links=[VaultLink.from_obsilink_link(link) for link in raw_links if link.is_file],
             slug=slug,
         )
