@@ -124,7 +124,6 @@ class LinkEdge:
 class VaultGraphMetadata:
     """Metadata summary for a vault graph result."""
 
-    source_directory: str
     total_files: int
     errors: int
 

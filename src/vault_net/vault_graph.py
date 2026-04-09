@@ -139,7 +139,6 @@ def build_vault_graph(vault_index: VaultIndex) -> VaultGraph:
 
     files = vault_index.files
     metadata = VaultGraphMetadata(
-        source_directory=vault_index.metadata.root,
         total_files=len(files),
         errors=sum(1 for f in files if f.status != "ok"),
     )

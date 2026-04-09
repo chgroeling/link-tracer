@@ -104,13 +104,11 @@ def build_note_graph(
     if depth == 0:
         if source_entry is None:
             metadata = VaultGraphMetadata(
-                source_directory=vault_graph.metadata.source_directory,
                 total_files=1,
                 errors=0,
             )
         else:
             metadata = VaultGraphMetadata(
-                source_directory=vault_graph.metadata.source_directory,
                 total_files=1,
                 errors=0 if source_entry.status == "ok" else 1,
             )
@@ -214,7 +212,6 @@ def build_note_graph(
     total = len(filtered_files) + extra
     errors = sum(1 for f in filtered_files if f.status != "ok")
     metadata = VaultGraphMetadata(
-        source_directory=vault_graph.metadata.source_directory,
         total_files=total,
         errors=errors,
     )
