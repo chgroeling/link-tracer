@@ -9,11 +9,11 @@ import structlog
 
 from link_tracer.consts import _POSSIBLE_EXTENSIONS
 from link_tracer.models import (
-    ExtractedLink,
     LinkEdge,
     ResolveMetadata,
     VaultGraph,
     VaultIndex,
+    VaultLink,
 )
 from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_for_response
 
@@ -60,7 +60,7 @@ def _resolve_link_to_file(
 
 
 def _resolve_extracted_link(
-    extracted_link: ExtractedLink,
+    extracted_link: VaultLink,
     resolved_vault: Path,
     *,
     name_to_file: dict[str, Path],

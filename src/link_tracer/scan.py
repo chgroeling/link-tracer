@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import structlog
 from matterify import scan_directory
 
-from link_tracer.models import ExtractedLink, VaultFile, VaultIndex, VaultIndexMetadata
+from link_tracer.models import VaultFile, VaultIndex, VaultIndexMetadata, VaultLink
 from link_tracer.utils import _extract_file_links
 
 logger = structlog.get_logger(__name__)
@@ -19,10 +19,10 @@ if TYPE_CHECKING:
     from matterify.models import ScanResults
 
 
-def _extract_file_links_callback(content: str) -> list[ExtractedLink]:
-    """Extract file links from note content as ExtractedLink objects."""
+def _extract_file_links_callback(content: str) -> list[VaultLink]:
+    """Extract file links from note content as VaultLink objects."""
     return [
-        ExtractedLink(
+        VaultLink(
             link_type=link.link_type,
             target=link.target,
             alias=link.alias,
@@ -66,12 +66,12 @@ def _convert_scan_to_index(
     # Convert matterify FileEntry list to VaultFile list
     files: list[VaultFile] = []
     for entry in scan_result.files:
-        # Access custom_data from matterify and convert to ExtractedLink objects
+        # Access custom_data from matterify and convert to VaultLink objects
         raw_links = getattr(entry, "custom_data", None)
-        links: list[ExtractedLink] | None = None
+        links: list[VaultLink] | None = None
         if isinstance(raw_links, list):
             links = [
-                ExtractedLink(
+                VaultLink(
                     link_type=link["link_type"],
                     target=link["target"],
                     alias=link.get("alias"),

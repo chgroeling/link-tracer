@@ -57,11 +57,11 @@ class VaultFile:
     error: str | None
     stats: object | None
     file_hash: str | None
-    links: list[ExtractedLink] | None
+    links: list[VaultLink] | None
 
 
 @dataclass(frozen=True, slots=True)
-class ExtractedLink:
+class VaultLink:
     """Represents a serialized obsilink link used in API output."""
 
     link_type: str
@@ -79,8 +79,8 @@ class ExtractedLink:
         alias: str | None,
         heading: str | None,
         blockid: str | None,
-    ) -> ExtractedLink:
-        """Build an ExtractedLink from obsilink Link fields."""
+    ) -> VaultLink:
+        """Build a VaultLink from obsilink Link fields."""
         return cls(
             link_type=link_type,
             target=target,
@@ -94,7 +94,7 @@ class ExtractedLink:
 class LinkEdge:
     """Represents a directed edge from one note to a link target."""
 
-    link: ExtractedLink
+    link: VaultLink
     resolved: bool
     target_note: str | None = None
     unresolved_reason: str | None = None
