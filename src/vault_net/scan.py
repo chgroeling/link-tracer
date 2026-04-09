@@ -70,25 +70,9 @@ def _convert_scan_to_index(
     # Convert matterify FileEntry list to VaultFile list
     files: list[VaultFile] = []
     for entry in scan_result.files:
-        # Access custom_data from matterify and convert to VaultLink objects
+        # Access custom_data from matterify — already list[VaultLink] from the callback
         raw_links = getattr(entry, "custom_data", None)
-        links: list[VaultLink] | None = None
-        if isinstance(raw_links, list):
-            links = [
-                VaultLink(
-                    link_type=link["link_type"],
-                    target=link["target"],
-                    alias=link.get("alias"),
-                    heading=link.get("heading"),
-                    blockid=link.get("blockid"),
-                )
-                for link in raw_links
-                if isinstance(link, dict)
-                and isinstance(link.get("link_type"), str)
-                and isinstance(link.get("target"), str)
-            ]
-            if not links:
-                links = None
+        links: list[VaultLink] | None = raw_links if isinstance(raw_links, list) and raw_links else None
         # These are guaranteed non-None: compute_frontmatter/compute_stats/compute_hash=True
         assert entry.stats is not None
         assert entry.file_hash is not None
