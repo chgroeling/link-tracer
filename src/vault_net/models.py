@@ -129,6 +129,7 @@ class VaultGraphMetadata:
     errors: int
 
 
+
 @dataclass(frozen=True, slots=True)
 class VaultGraph:
     """Vault-wide link graph: edges between notes with summary metadata."""
@@ -136,6 +137,7 @@ class VaultGraph:
     vault_root: str
     metadata: VaultGraphMetadata
     edges: dict[str, list[LinkEdge]]
+
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +155,10 @@ class NoteGraph:
     """
 
     source_note: str
-    graph: VaultGraph
+    vault_root: str
+    metadata: VaultGraphMetadata
+    edges: dict[str, list[LinkEdge]]
+
 
 
 @dataclass(frozen=True, slots=True)

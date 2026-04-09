@@ -133,7 +133,7 @@ def note_graph(
         note_path=note, vault_graph=vault_graph, vault_index=vault_index, depth=depth
     )
     if fmt == "layered":
-        payload = json.dumps(asdict(to_layered(note_graph.source_note, note_graph.graph)), indent=2)
+        payload = json.dumps(asdict(to_layered(note_graph.source_note, note_graph)), indent=2)
     else:
         payload = json.dumps(asdict(note_graph), indent=2)
     emit_json_output(payload, output)

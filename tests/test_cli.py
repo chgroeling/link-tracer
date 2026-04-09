@@ -28,9 +28,9 @@ def test_cli_prints_stub_payload(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["graph"]["vault_root"] == str(tmp_path)
-    assert "metadata" in payload["graph"]
-    assert "edges" in payload["graph"]
+    assert payload["vault_root"] == str(tmp_path)
+    assert "metadata" in payload
+    assert "edges" in payload
 
 
 def test_cli_help_exits_cleanly() -> None:
@@ -54,7 +54,7 @@ def test_cli_uses_vault_root_option(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["graph"]["vault_root"] == str(vault)
+    assert payload["vault_root"] == str(vault)
 
 
 def test_cli_uses_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -70,7 +70,7 @@ def test_cli_uses_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["graph"]["vault_root"] == str(vault)
+    assert payload["vault_root"] == str(vault)
 
 
 def test_cli_env_var_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -87,7 +87,7 @@ def test_cli_env_var_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["graph"]["vault_root"] == str(vault)
+    assert payload["vault_root"] == str(vault)
 
 
 def test_cli_errors_without_vault_root(tmp_path: Path) -> None:
@@ -138,14 +138,14 @@ def test_trace_filters_files_to_matched_links(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["graph"]["metadata"]["total_files"] == 5
-    assert payload["graph"]["metadata"]["errors"] == 0
+    assert payload["metadata"]["total_files"] == 5
+    assert payload["metadata"]["errors"] == 0
     # Forward edge
-    assert payload["graph"]["edges"]["home.md"][0]["target_note"] == "about.md"
-    assert payload["graph"]["edges"]["home.md"][0]["resolved"] is True
-    assert payload["graph"]["edges"]["home.md"][0]["link"]["target"].lower() == "about"
+    assert payload["edges"]["home.md"][0]["target_note"] == "about.md"
+    assert payload["edges"]["home.md"][0]["resolved"] is True
+    assert payload["edges"]["home.md"][0]["link"]["target"].lower() == "about"
     # Backlink edges into home
-    assert set(payload["graph"]["edges"]) == {"home.md", "tasks.md", "notes.md", "reading_list.md"}
+    assert set(payload["edges"]) == {"home.md", "tasks.md", "notes.md", "reading_list.md"}
 
 
 def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
@@ -158,16 +158,16 @@ def test_trace_filters_multiple_matched_files(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload["graph"]["metadata"]["total_files"] == 6
-    assert payload["graph"]["metadata"]["errors"] == 0
+    assert payload["metadata"]["total_files"] == 6
+    assert payload["metadata"]["errors"] == 0
     # Forward edges from about
-    assert [edge["target_note"] for edge in payload["graph"]["edges"]["about.md"]] == [
+    assert [edge["target_note"] for edge in payload["edges"]["about.md"]] == [
         "projects.md",
         "tasks.md",
         "diagram.md",
     ]
     # Backlink edges into about
-    assert set(payload["graph"]["edges"]) == {"about.md", "home.md", "notes.md", "diagram.md"}
+    assert set(payload["edges"]) == {"about.md", "home.md", "notes.md", "diagram.md"}
 
 
 def test_trace_links_matches_link_without_extension(tmp_path: Path) -> None:
@@ -183,9 +183,9 @@ def test_trace_links_matches_link_without_extension(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert "edges" in payload["graph"]
-    assert set(payload["graph"]["edges"]) == {"home.md"}
-    assert payload["graph"]["edges"]["home.md"][0]["target_note"] == "about.md"
+    assert "edges" in payload
+    assert set(payload["edges"]) == {"home.md"}
+    assert payload["edges"]["home.md"][0]["target_note"] == "about.md"
 
 
 def test_trace_links_matches_link_with_uppercase_extension(tmp_path: Path) -> None:
@@ -201,8 +201,8 @@ def test_trace_links_matches_link_with_uppercase_extension(tmp_path: Path) -> No
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert set(payload["graph"]["edges"]) == {"home.md"}
-    assert payload["graph"]["edges"]["home.md"][0]["target_note"] == "about.MD"
+    assert set(payload["edges"]) == {"home.md"}
+    assert payload["edges"]["home.md"][0]["target_note"] == "about.MD"
 
 
 def test_trace_links_matches_link_with_markdown_extension(tmp_path: Path) -> None:
@@ -218,8 +218,8 @@ def test_trace_links_matches_link_with_markdown_extension(tmp_path: Path) -> Non
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert set(payload["graph"]["edges"]) == {"home.md"}
-    assert payload["graph"]["edges"]["home.md"][0]["target_note"] == "about.markdown"
+    assert set(payload["edges"]) == {"home.md"}
+    assert payload["edges"]["home.md"][0]["target_note"] == "about.markdown"
 
 
 def test_trace_links_matches_link_with_extension(tmp_path: Path) -> None:
@@ -235,8 +235,8 @@ def test_trace_links_matches_link_with_extension(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert set(payload["graph"]["edges"]) == {"home.md"}
-    assert payload["graph"]["edges"]["home.md"][0]["target_note"] == "about.md"
+    assert set(payload["edges"]) == {"home.md"}
+    assert payload["edges"]["home.md"][0]["target_note"] == "about.md"
 
 
 def test_trace_links_matches_heading_reference(tmp_path: Path) -> None:
@@ -254,8 +254,8 @@ def test_trace_links_matches_heading_reference(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert set(payload["graph"]["edges"]) == {"home.md"}
-    assert payload["graph"]["edges"]["home.md"][0]["target_note"] == "about.md"
+    assert set(payload["edges"]) == {"home.md"}
+    assert payload["edges"]["home.md"][0]["target_note"] == "about.md"
 
 
 def test_trace_links_matches_block_reference(tmp_path: Path) -> None:
@@ -271,8 +271,8 @@ def test_trace_links_matches_block_reference(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert set(payload["graph"]["edges"]) == {"home.md"}
-    assert payload["graph"]["edges"]["home.md"][0]["target_note"] == "about.md"
+    assert set(payload["edges"]) == {"home.md"}
+    assert payload["edges"]["home.md"][0]["target_note"] == "about.md"
 
 
 def test_trace_links_uses_path_component_for_duplicate_names(tmp_path: Path) -> None:
@@ -285,8 +285,8 @@ def test_trace_links_uses_path_component_for_duplicate_names(tmp_path: Path) -> 
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert set(payload["graph"]["edges"]) == {"home.md"}
-    assert [edge["target_note"] for edge in payload["graph"]["edges"]["home.md"]] == [
+    assert set(payload["edges"]) == {"home.md"}
+    assert [edge["target_note"] for edge in payload["edges"]["home.md"]] == [
         "docs/about.md",
         "teams/about.md",
     ]
@@ -302,8 +302,8 @@ def test_note_graph_default_format_returns_edges_key(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert "edges" in payload["graph"]
-    assert "layers" not in payload["graph"]
+    assert "edges" in payload
+    assert "layers" not in payload
 
 
 def test_note_graph_format_edges_returns_edges_key(tmp_path: Path) -> None:
@@ -318,8 +318,8 @@ def test_note_graph_format_edges_returns_edges_key(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert "edges" in payload["graph"]
-    assert "layers" not in payload["graph"]
+    assert "edges" in payload
+    assert "layers" not in payload
 
 
 def test_note_graph_format_layered_returns_layers_key(tmp_path: Path) -> None:
@@ -446,7 +446,7 @@ def test_note_command_output_writes_json_file(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert result.output == ""
     payload = json.loads(output.read_text(encoding="utf-8"))
-    assert payload["graph"]["vault_root"] == str(tmp_path)
+    assert payload["vault_root"] == str(tmp_path)
 
 
 def test_vault_command_output_writes_json_file(tmp_path: Path) -> None:

@@ -114,19 +114,19 @@ def build_note_graph(
                 total_files=1,
                 errors=0 if source_entry.status == "ok" else 1,
             )
-        graph = VaultGraph(
-            vault_root=vault_graph.vault_root,
-            metadata=metadata,
-            edges={},
-        )
         duration = time.monotonic() - start
         logger.debug(
             "build_note_graph.complete",
             duration=round(duration, 4),
-            files=graph.metadata.total_files,
+            files=metadata.total_files,
             edges=0,
         )
-        return NoteGraph(source_note=source_note, graph=graph)
+        return NoteGraph(
+            source_note=source_note,
+            vault_root=vault_graph.vault_root,
+            metadata=metadata,
+            edges={},
+        )
     else:
         reverse_index = _build_reverse_index(vault_graph.edges)
         visited: set[str] = {source_note}
@@ -219,17 +219,16 @@ def build_note_graph(
         errors=errors,
     )
 
-    graph = VaultGraph(
-        vault_root=vault_graph.vault_root,
-        metadata=metadata,
-        edges=edges,
-    )
-
     duration = time.monotonic() - start
     logger.debug(
         "build_note_graph.complete",
         duration=round(duration, 4),
-        files=graph.metadata.total_files,
-        edges=len(graph.edges),
+        files=metadata.total_files,
+        edges=len(edges),
     )
-    return NoteGraph(source_note=source_note, graph=graph)
+    return NoteGraph(
+        source_note=source_note,
+        vault_root=vault_graph.vault_root,
+        metadata=metadata,
+        edges=edges,
+    )

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from collections import deque
 
-from vault_net.models import LayerEntry, VaultGraph, VaultLayered
+from vault_net.models import LayerEntry, NoteGraph, VaultGraph, VaultLayered
 
 __all__ = ["to_layered"]
 
 
-def to_layered(source_note: str, graph: VaultGraph) -> VaultLayered:
+def to_layered(source_note: str, graph: VaultGraph | NoteGraph) -> VaultLayered:
     """Transform a note graph into a flat BFS depth-layer list.
 
     Each note in the graph is assigned to its shallowest reachable depth from
