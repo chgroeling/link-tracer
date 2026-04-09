@@ -38,7 +38,7 @@ class VaultFile:
     """Represents a scanned file in the vault.
 
     Mirrors matterify.models.FileEntry but uses local types and
-    renames custom_data to found_links.
+    renames custom_data to links.
 
     Attributes:
         file_path: Path to the file relative to the vault root.
@@ -47,7 +47,7 @@ class VaultFile:
         error: Error message if status is not "ok", otherwise None.
         stats: Optional file statistics object.
         file_hash: Optional hash of the file contents.
-        found_links: Optional list of extracted links from the file content.
+        links: Optional list of extracted links from the file content.
             Renamed from custom_data in matterify.
     """
 
@@ -57,7 +57,7 @@ class VaultFile:
     error: str | None
     stats: object | None
     file_hash: str | None
-    found_links: list[dict] | None
+    links: list[ExtractedLink] | None
 
 
 @dataclass(frozen=True, slots=True)

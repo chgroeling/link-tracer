@@ -182,7 +182,7 @@ class FakeFileEntry:
     error: str | None = None
     stats: object | None = None
     file_hash: str | None = None
-    found_links: object | None = None
+    links: object | None = None
 
 
 @dataclass

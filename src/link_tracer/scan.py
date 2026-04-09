@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import structlog
 from matterify import scan_directory
 
-from link_tracer.models import VaultFile, VaultIndex, VaultIndexMetadata
+from link_tracer.models import ExtractedLink, VaultFile, VaultIndex, VaultIndexMetadata
 from link_tracer.utils import _extract_file_links
 
 logger = structlog.get_logger(__name__)
@@ -19,16 +19,16 @@ if TYPE_CHECKING:
     from matterify.models import ScanResults
 
 
-def _extract_file_links_callback(content: str) -> list[dict[str, object]]:
-    """Extract serializable file links from note content."""
+def _extract_file_links_callback(content: str) -> list[ExtractedLink]:
+    """Extract file links from note content as ExtractedLink objects."""
     return [
-        {
-            "link_type": link.link_type,
-            "target": link.target,
-            "alias": link.alias,
-            "heading": link.heading,
-            "blockid": link.blockid,
-        }
+        ExtractedLink(
+            link_type=link.link_type,
+            target=link.target,
+            alias=link.alias,
+            heading=link.heading,
+            blockid=link.blockid,
+        )
         for link in _extract_file_links(content)
     ]
 
@@ -66,8 +66,25 @@ def _convert_scan_to_index(
     # Convert matterify FileEntry list to VaultFile list
     files: list[VaultFile] = []
     for entry in scan_result.files:
-        # Access custom_data from matterify and map to found_links
+        # Access custom_data from matterify and convert to ExtractedLink objects
         raw_links = getattr(entry, "custom_data", None)
+        links: list[ExtractedLink] | None = None
+        if isinstance(raw_links, list):
+            links = [
+                ExtractedLink(
+                    link_type=link["link_type"],
+                    target=link["target"],
+                    alias=link.get("alias"),
+                    heading=link.get("heading"),
+                    blockid=link.get("blockid"),
+                )
+                for link in raw_links
+                if isinstance(link, dict)
+                and isinstance(link.get("link_type"), str)
+                and isinstance(link.get("target"), str)
+            ]
+            if not links:
+                links = None
         vault_file = VaultFile(
             file_path=entry.file_path,
             frontmatter=entry.frontmatter,
@@ -75,7 +92,7 @@ def _convert_scan_to_index(
             error=entry.error,
             stats=entry.stats,
             file_hash=entry.file_hash,
-            found_links=raw_links if isinstance(raw_links, list) else None,
+            links=links,
         )
         files.append(vault_file)
 

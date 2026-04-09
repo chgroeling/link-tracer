@@ -20,49 +20,6 @@ from link_tracer.utils import _extract_file_links, _normalize_lookup_key, _path_
 logger = structlog.get_logger(__name__)
 
 
-def _entry_has_file_links_payload(entry: object) -> bool:
-    """Return whether an entry contains a serialized file-links payload."""
-    found_links = getattr(entry, "found_links", None)
-    return isinstance(found_links, list)
-
-
-def _entry_file_links(entry: object) -> list[ExtractedLink]:
-    """Read serialized file links from a scan entry found_links payload."""
-    found_links = getattr(entry, "found_links", None)
-    if not isinstance(found_links, list):
-        return []
-
-    links: list[ExtractedLink] = []
-    for raw_link in found_links:
-        if not isinstance(raw_link, dict):
-            continue
-
-        link_type_raw = raw_link.get("link_type")
-        target_raw = raw_link.get("target")
-        alias_raw = raw_link.get("alias")
-        heading_raw = raw_link.get("heading")
-        blockid_raw = raw_link.get("blockid")
-
-        if not isinstance(link_type_raw, str) or not isinstance(target_raw, str):
-            continue
-
-        alias = alias_raw if isinstance(alias_raw, str) else None
-        heading = heading_raw if isinstance(heading_raw, str) else None
-        blockid = blockid_raw if isinstance(blockid_raw, str) else None
-
-        links.append(
-            ExtractedLink.from_obsilink_link(
-                link_type=link_type_raw,
-                target=target_raw,
-                alias=alias,
-                heading=heading,
-                blockid=blockid,
-            )
-        )
-
-    return links
-
-
 def _resolve_link_to_file(
     link_path: Path,
     *,
@@ -159,11 +116,11 @@ def build_vault_graph(vault_index: VaultIndex) -> VaultGraph:
     for entry in vault_index.files:
         source_note_path = (resolved_vault / Path(entry.file_path)).resolve()
         source_note = _path_for_response(source_note_path, resolved_vault)
-        if _entry_has_file_links_payload(entry):
-            extracted_links = _entry_file_links(entry)
-        else:
-            content = source_note_path.read_text(encoding="utf-8")
-            extracted_links = _extract_file_links(content)
+        extracted_links = (
+            entry.links
+            if entry.links is not None
+            else _extract_file_links(source_note_path.read_text(encoding="utf-8"))
+        )
 
         outgoing_links: list[LinkEdge] = []
 
