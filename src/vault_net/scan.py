@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING
 import structlog
 from matterify import scan_directory
 from matterify.constants import BLACKLIST
+from obsilink import extract_links
 
 from vault_net.models import VaultFile, VaultFileStats, VaultIndex, VaultIndexMetadata, VaultLink
-from vault_net.utils import _extract_file_links
 
 logger = structlog.get_logger(__name__)
 
@@ -18,20 +18,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from matterify.models import ScanResults
-
-
-def _extract_file_links_callback(content: str) -> list[VaultLink]:
-    """Extract file links from note content as VaultLink objects."""
-    return [
-        VaultLink(
-            link_type=link.link_type,
-            target=link.target,
-            alias=link.alias,
-            heading=link.heading,
-            blockid=link.blockid,
-        )
-        for link in _extract_file_links(content)
-    ]
 
 
 def _convert_scan_to_index(
@@ -70,12 +56,13 @@ def _convert_scan_to_index(
     # Convert matterify FileEntry list to VaultFile list
     files: list[VaultFile] = []
     for entry in scan_result.files:
-        # Access custom_data from matterify — already list[VaultLink] from the callback
-        raw_links = getattr(entry, "custom_data", None)
-        links: list[VaultLink] | None = raw_links if isinstance(raw_links, list) and raw_links else None
+        # Access custom_data from matterify — already list[Link] from the callback
+        raw_links = getattr(entry, "custom_data", None) or []
+
         # These are guaranteed non-None: compute_frontmatter/compute_stats/compute_hash=True
         assert entry.stats is not None
         assert entry.file_hash is not None
+
         vault_file = VaultFile(
             file_path=entry.file_path,
             frontmatter=entry.frontmatter,
@@ -87,7 +74,7 @@ def _convert_scan_to_index(
                 access_time=entry.stats.access_time,
             ),
             file_hash=entry.file_hash,
-            links=links,
+            links=[VaultLink.from_obsilink_link(link) for link in raw_links if link.is_file],
         )
         files.append(vault_file)
 
@@ -127,7 +114,7 @@ def scan_vault(
         compute_hash=True,
         compute_stats=True,
         compute_frontmatter=True,
-        callback=_extract_file_links_callback,
+        callback=extract_links,
     )
 
     # Inline build_index logic

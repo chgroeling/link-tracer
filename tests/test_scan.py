@@ -5,9 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+from obsilink import Link, LinkType
+
+from tests.fixtures import FakeFileEntry, FakeScanMetadata, FakeScanResults
 from vault_net import scan_vault
 from vault_net.models import VaultIndex
-from tests.fixtures import FakeFileEntry, FakeScanMetadata, FakeScanResults
 
 
 def test_scan_vault_delegates_to_scan_directory() -> None:
@@ -32,19 +34,19 @@ def test_scan_vault_delegates_to_scan_directory() -> None:
 
 
 def test_scan_vault_converts_custom_data_to_vault_links() -> None:
-    """scan_vault() converts matterify custom_data dicts into VaultLink objects."""
+    """scan_vault() converts matterify custom_data Link objects into VaultLink objects."""
     vault_root = Path("/tmp/vault")  # noqa: S108
     fake_files = [
         FakeFileEntry(
             file_path="note.md",
             custom_data=[
-                {
-                    "link_type": "WIKILINK",
-                    "target": "other",
-                    "alias": None,
-                    "heading": "Section",
-                    "blockid": None,
-                },
+                Link(
+                    type=LinkType.WIKILINK,
+                    target="other",
+                    alias=None,
+                    heading="Section",
+                    blockid=None,
+                ),
             ],
         ),
     ]
@@ -59,6 +61,6 @@ def test_scan_vault_converts_custom_data_to_vault_links() -> None:
     assert vault_index.files[0].links is not None
     assert len(vault_index.files[0].links) == 1
     link = vault_index.files[0].links[0]
-    assert link.link_type == "WIKILINK"
+    assert link.link_type == "wikilink"
     assert link.target == "other"
     assert link.heading == "Section"
