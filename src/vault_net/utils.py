@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 
 from obsilink import extract_links
 
+from vault_net.models import VaultLink
+
 if TYPE_CHECKING:
     from pathlib import Path
-
-    from vault_net.models import VaultLink
 
 
 def _normalize_lookup_key(path: Path) -> str:
@@ -19,20 +19,8 @@ def _normalize_lookup_key(path: Path) -> str:
 
 def _extract_file_links(content: str) -> list[VaultLink]:
     """Extract file-like links from note content as serializable models."""
-    from vault_net.models import VaultLink
-
     links = extract_links(content)
-    return [
-        VaultLink.from_obsilink_link(
-            link_type=link.type.value,
-            target=link.target,
-            alias=link.alias,
-            heading=link.heading,
-            blockid=link.blockid,
-        )
-        for link in links
-        if link.is_file
-    ]
+    return [VaultLink.from_obsilink_link(link) for link in links if link.is_file]
 
 
 def _path_for_response(path: Path, resolved_vault: Path) -> str:

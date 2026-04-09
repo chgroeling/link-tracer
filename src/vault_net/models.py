@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from obsilink import Link
+
 
 @dataclass(frozen=True, slots=True)
 class VaultIndexMetadata:
@@ -54,63 +56,6 @@ class VaultFileStats:
 
 
 @dataclass(frozen=True, slots=True)
-class VaultFile:
-    """Represents a scanned file in the vault.
-
-    Mirrors matterify.models.FileEntry but uses local types and
-    renames custom_data to links.
-
-    Attributes:
-        file_path: Path to the file relative to the vault root.
-        frontmatter: Extracted YAML frontmatter as a dictionary.
-        status: Scan status string (e.g., "ok").
-        error: Error message if status is not "ok", otherwise None.
-        stats: File statistics object.
-        file_hash: Hash of the file contents.
-        links: Optional list of extracted links from the file content.
-            Renamed from custom_data in matterify.
-    """
-
-    file_path: str
-    frontmatter: dict | None
-    status: str
-    error: str | None
-    stats: VaultFileStats
-    file_hash: str
-    links: list[VaultLink] | None
-
-
-@dataclass(frozen=True, slots=True)
-class VaultLink:
-    """Represents a serialized obsilink link used in API output."""
-
-    link_type: str
-    target: str
-    alias: str | None
-    heading: str | None
-    blockid: str | None
-
-    @classmethod
-    def from_obsilink_link(
-        cls,
-        *,
-        link_type: str,
-        target: str,
-        alias: str | None,
-        heading: str | None,
-        blockid: str | None,
-    ) -> VaultLink:
-        """Build a VaultLink from obsilink Link fields."""
-        return cls(
-            link_type=link_type,
-            target=target,
-            alias=alias,
-            heading=heading,
-            blockid=blockid,
-        )
-
-
-@dataclass(frozen=True, slots=True)
 class LinkEdge:
     """Represents a directed edge from one note to a link target."""
 
@@ -127,7 +72,6 @@ class VaultGraphMetadata:
     total_files: int
 
 
-
 @dataclass(frozen=True, slots=True)
 class VaultGraph:
     """Vault-wide link graph: edges between notes with summary metadata."""
@@ -135,7 +79,6 @@ class VaultGraph:
     vault_root: str
     metadata: VaultGraphMetadata
     edges: dict[str, list[LinkEdge]]
-
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,7 +99,6 @@ class NoteGraph:
     vault_root: str
     metadata: VaultGraphMetadata
     edges: dict[str, list[LinkEdge]]
-
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +133,55 @@ class VaultLayered:
     vault_root: str
     metadata: VaultGraphMetadata
     layers: list[LayerEntry]
+
+
+@dataclass(frozen=True, slots=True)
+class VaultLink:
+    """Represents a serialized obsilink link used in API output."""
+
+    link_type: str
+    target: str
+    alias: str | None
+    heading: str | None
+    blockid: str | None
+
+    @classmethod
+    def from_obsilink_link(cls, link: Link) -> VaultLink:
+        """Build a VaultLink from obsilink Link fields."""
+        return cls(
+            link_type=link.type.value,
+            target=link.target,
+            alias=link.alias,
+            heading=link.heading,
+            blockid=link.blockid,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class VaultFile:
+    """Represents a scanned file in the vault.
+
+    Mirrors matterify.models.FileEntry but uses local types and
+    renames custom_data to links.
+
+    Attributes:
+        file_path: Path to the file relative to the vault root.
+        frontmatter: Extracted YAML frontmatter as a dictionary.
+        status: Scan status string (e.g., "ok").
+        error: Error message if status is not "ok", otherwise None.
+        stats: File statistics object.
+        file_hash: Hash of the file contents.
+        links: Optional list of extracted links from the file content.
+            Renamed from custom_data in matterify.
+    """
+
+    file_path: str
+    frontmatter: dict | None
+    status: str
+    error: str | None
+    stats: VaultFileStats
+    file_hash: str
+    links: list[VaultLink] | None
 
 
 @dataclass(frozen=True, slots=True)

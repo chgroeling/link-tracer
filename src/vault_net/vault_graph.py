@@ -117,7 +117,7 @@ def _build_vault_graph(
     resolved_vault = vault_root.resolve()
     edges: dict[str, list[LinkEdge]] = {}
 
-    for fp, links in zip(file_paths, file_links):
+    for fp, links in zip(file_paths, file_links, strict=True):
         source_note_path = (resolved_vault / Path(fp)).resolve()
         source_note = _path_for_response(source_note_path, resolved_vault)
         extracted_links = (

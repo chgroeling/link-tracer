@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+from tests.fixtures import create_sample_vault, create_test_vault
 from vault_net import __version__
 from vault_net.cli import main
-from tests.fixtures import create_sample_vault, create_test_vault
 
 
 def test_package_exposes_version() -> None:
