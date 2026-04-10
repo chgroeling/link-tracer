@@ -46,7 +46,7 @@ Repository = "https://github.com/chgroeling/vault-net"
 Issues = "https://github.com/chgroeling/vault-net/issues"
 
 [project.scripts]
-vault-net = "vault_net.cli:main"
+vault-net = "vault_net.interface.cli.main:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -98,7 +98,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = [
+"tests/**/*.py" = [
     "S101",  # allow pytest assertions in tests
     "TC002", # allow runtime imports in tests
     "TC003", # allow runtime imports in tests
@@ -131,6 +131,38 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "obsilink"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "networkx"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "vault_net.domain.models"
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = "vault_net.domain.protocols"
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = "vault_net.application.api"
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = "vault_net.application.use_cases.build_note_ego_graph"
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = "vault_net.infrastructure.graph.networkx_graph_builder"
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = "vault_net.interface.formatters.views"
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
+module = "tests.interface.formatters.test_views"
+disallow_any_unimported = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

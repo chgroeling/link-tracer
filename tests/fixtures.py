@@ -184,7 +184,7 @@ class FakeFileStats:
 @dataclass
 class FakeFileEntry:
     file_path: str = "note.md"
-    frontmatter: dict = field(default_factory=dict)
+    frontmatter: dict[str, object] = field(default_factory=dict)
     status: str = "ok"
     error: str | None = None
     stats: object = field(default_factory=FakeFileStats)

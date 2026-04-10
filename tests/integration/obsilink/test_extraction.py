@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from obsilink import extract_links
-
 from tests.fixtures import create_sample_vault
 
 

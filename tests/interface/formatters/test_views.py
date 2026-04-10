@@ -1,14 +1,17 @@
-"""Tests for graph view functions."""
+"""Interface formatter tests for graph view functions."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 import networkx as nx
 
-from vault_net.models import VaultFile, VaultGraph, VaultGraphMetadata
-from vault_net.views import build_layered_repr
+from vault_net.domain.models import VaultFile, VaultGraph, VaultGraphMetadata
+from vault_net.domain.services.registry import VaultRegistry
+from vault_net.infrastructure.scanner.matterify_scanner import MatterifyVaultScanner
+from vault_net.interface.formatters.views import build_layered_repr, build_vault_edge_list
 
 
 @dataclass(frozen=True)
@@ -48,7 +51,7 @@ def test_build_layered_repr_returns_dictionary() -> None:
 
 
 def test_build_layered_repr_preserves_vault_root_and_total_files() -> None:
-    """source note, root and size are forwarded correctly."""
+    """Source note, root and size are forwarded correctly."""
     graph: nx.DiGraph[str] = nx.DiGraph()
     graph.add_edge("home.md", "about.md")
 
@@ -73,7 +76,8 @@ def test_build_layered_repr_backlinks_appear_at_depth_one() -> None:
     graph: nx.DiGraph[str] = nx.DiGraph()
     graph.add_edge("other.md", "home.md")
     result = build_layered_repr("home.md", _build_graph(graph), _build_registry(graph))
-    depths = {entry["note"].slug: entry["depth"] for entry in result["layers"]}
+    layers = cast("list[dict[str, Any]]", result["layers"])
+    depths = {entry["note"].slug: entry["depth"] for entry in layers}
     assert depths["home.md"] == 0
     assert depths["other.md"] == 1
 
@@ -84,7 +88,32 @@ def test_build_layered_repr_two_hop_note_appears_at_depth_two() -> None:
     graph.add_edge("home.md", "about.md")
     graph.add_edge("about.md", "projects.md")
     result = build_layered_repr("home.md", _build_graph(graph), _build_registry(graph))
-    depths = {entry["note"].slug: entry["depth"] for entry in result["layers"]}
+    layers = cast("list[dict[str, Any]]", result["layers"])
+    depths = {entry["note"].slug: entry["depth"] for entry in layers}
     assert depths["home.md"] == 0
     assert depths["about.md"] == 1
     assert depths["projects.md"] == 2
+
+
+def test_build_vault_edge_list_returns_lightweight_vault_file_pairs(tmp_path: Path) -> None:
+    """Edge list is represented as source/target `VaultFile` pairs."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    (vault_root / "home.md").write_text("[[about]]\n", encoding="utf-8")
+    (vault_root / "about.md").write_text("", encoding="utf-8")
+
+    scanner = MatterifyVaultScanner()
+    vault_index = scanner.scan(vault_root)
+    vault_registry = VaultRegistry(vault_index)
+
+    graph: nx.DiGraph[str] = nx.DiGraph()
+    graph.add_edge("home.md", "about.md")
+    vault_graph = _build_graph(graph)
+    edges = build_vault_edge_list(vault_graph, vault_registry)
+
+    assert len(edges) == 1
+    assert edges[0][0].file_path == "home.md"
+    assert edges[0][1].file_path == "about.md"
+    assert not hasattr(edges[0][0], "links")
+    assert not hasattr(edges[0][0], "frontmatter")
+    assert not hasattr(edges[0][0], "stats")

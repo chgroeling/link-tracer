@@ -1,0 +1,1 @@
+"""Interface adapters and entrypoints."""

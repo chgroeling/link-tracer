@@ -14,15 +14,15 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from vault_net import (
-    VaultRegistry,
-    build_note_ego_graph,
-    build_vault_digraph,
-    scan_vault,
+from vault_net.application import build_note_ego_graph, build_vault_digraph, scan_vault
+from vault_net.domain.models import VaultGraph, VaultGraphMetadata
+from vault_net.domain.services.registry import VaultRegistry
+from vault_net.interface.formatters.views import (
+    build_adjacency_list,
+    build_layered_repr,
+    build_vault_edge_list,
 )
 from vault_net.logging import configure_debug_logging, get_console
-from vault_net.models import VaultGraph, VaultGraphMetadata
-from vault_net.views import build_adjacency_list, build_layered_repr, build_vault_edge_list
 
 logger = structlog.get_logger(__name__)
 
@@ -50,12 +50,7 @@ def resolve_vault_root(cli_value: Path | None) -> Path:
 
 
 def emit_json_output(payload: str, output: Path | None) -> None:
-    """Emit JSON payload to stdout or a target file.
-
-    Args:
-        payload: Serialized JSON payload.
-        output: Optional output file path.
-    """
+    """Emit JSON payload to stdout or a target file."""
     if output is None:
         click.echo(payload)
         return
@@ -95,7 +90,6 @@ def _depth_text(depth: int) -> Text:
 
 
 def _render_edge_list_table(graph: VaultGraph, vault_registry: VaultRegistry) -> Table:
-    """Render source/target edge list as a rich table."""
     table = Table(show_header=True, header_style="bold")
     table.add_column("Source Slug")
     table.add_column("Target Slug")
@@ -114,7 +108,6 @@ def _render_edge_list_table(graph: VaultGraph, vault_registry: VaultRegistry) ->
 
 
 def _render_adjacency_list_table(graph: VaultGraph, vault_registry: VaultRegistry) -> Table:
-    """Render source note adjacency as a rich table."""
     table = Table(show_header=True, header_style="bold")
     table.add_column("Slug")
     table.add_column("Path")
@@ -143,7 +136,6 @@ def _render_adjacency_list_table(graph: VaultGraph, vault_registry: VaultRegistr
 def _render_layered_table(
     source_slug: str, graph: VaultGraph, vault_registry: VaultRegistry
 ) -> Table:
-    """Render layered note graph as a rich table."""
     table = Table(show_header=True, header_style="bold")
     table.add_column("Slug")
     table.add_column("Depth")
@@ -175,11 +167,7 @@ def main() -> None:
     """Trace Obsidian note links to filesystem sources."""
 
 
-def _serialize_edge_list(
-    graph: VaultGraph,
-    vault_registry: VaultRegistry,
-) -> dict[str, object]:
-    """Serialize graph edges to an edge_list payload."""
+def _serialize_edge_list(graph: VaultGraph, vault_registry: VaultRegistry) -> dict[str, object]:
     edges = build_vault_edge_list(graph, vault_registry)
     return {
         "vault_root": str(graph.vault_root),
@@ -192,7 +180,6 @@ def _serialize_adjacency_list(
     graph: VaultGraph,
     vault_registry: VaultRegistry,
 ) -> dict[str, list[object]]:
-    """Serialize graph adjacency as source slug -> target VaultFile list."""
     adjacency = build_adjacency_list(graph, vault_registry)
     return {
         source_slug: [asdict(target_file) for target_file in target_files]
@@ -205,7 +192,6 @@ def _serialize_layered_repr(
     graph: VaultGraph,
     vault_registry: VaultRegistry,
 ) -> dict[str, object]:
-    """Serialize graph layers as depth entries with `VaultFile` notes."""
     layered = build_layered_repr(source_slug, graph, vault_registry)
     raw_layers = layered.get("layers", [])
     if not isinstance(raw_layers, list):
@@ -297,12 +283,14 @@ def note_graph(
     console = get_console(verbose)
 
     logger.debug(
-        "Starting link tracer", slug=slug, vault_root=str(vault_root) if vault_root else None
+        "starting.link_tracer", slug=slug, vault_root=str(vault_root) if vault_root else None
     )
     vault_root = resolve_vault_root(vault_root)
-    logger.info("Tracing links", slug=slug)
+    logger.info("tracing.links", slug=slug)
     vault_index = scan_vault(
-        vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
+        vault_root,
+        extra_exclude_dir=extra_exclude_dir,
+        no_default_excludes=no_default_excludes,
     )
     vault_registry = VaultRegistry(vault_index)
     vault_graph = build_vault_digraph(vault_index=vault_index)
@@ -335,7 +323,7 @@ def note_graph(
     else:
         emit_pretty_output(_render_edge_list_table(ego_vault_graph, vault_registry), output)
     console.print("Link tracing complete")
-    logger.info("Link tracing complete")
+    logger.info("link.tracing.complete")
     return 0
 
 
@@ -380,16 +368,18 @@ def index_cmd(
     configure_debug_logging(debug)
     console = get_console(verbose)
 
-    logger.debug("Starting vault index scan", vault_root=str(vault_root) if vault_root else None)
+    logger.debug("starting.vault_index_scan", vault_root=str(vault_root) if vault_root else None)
     vault_root = resolve_vault_root(vault_root)
-    logger.info("Scanning vault index", vault_root=str(vault_root))
+    logger.info("scanning.vault.index", vault_root=str(vault_root))
     vault_index = scan_vault(
-        vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
+        vault_root,
+        extra_exclude_dir=extra_exclude_dir,
+        no_default_excludes=no_default_excludes,
     )
     payload = json.dumps(asdict(vault_index), indent=2, default=str)
     emit_json_output(payload, output)
     console.print("Vault index scan complete")
-    logger.info("Vault index scan complete")
+    logger.info("vault.index.scan.complete")
     return 0
 
 
@@ -451,14 +441,15 @@ def graph_cmd(
     configure_debug_logging(debug)
     console = get_console(verbose)
 
-    logger.debug("Starting vault edge list", vault_root=str(vault_root) if vault_root else None)
+    logger.debug("starting.vault_edge_list", vault_root=str(vault_root) if vault_root else None)
     vault_root = resolve_vault_root(vault_root)
-    logger.info("Building vault edge list", vault_root=str(vault_root))
+    logger.info("building.vault.edge_list", vault_root=str(vault_root))
     vault_index = scan_vault(
-        vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
+        vault_root,
+        extra_exclude_dir=extra_exclude_dir,
+        no_default_excludes=no_default_excludes,
     )
     vault_registry = VaultRegistry(vault_index)
-
     vault_graph = build_vault_digraph(vault_index)
 
     payload_obj: object
@@ -474,9 +465,5 @@ def graph_cmd(
     else:
         emit_pretty_output(_render_edge_list_table(vault_graph, vault_registry), output)
     console.print("Vault edge list complete")
-    logger.info("Vault edge list complete")
+    logger.info("vault.edge.list.complete")
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

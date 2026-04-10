@@ -1,4 +1,4 @@
-"""Tests for vault-net CLI and vault directory resolution."""
+"""Interface-layer tests for CLI behavior."""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
-
 from tests.fixtures import create_sample_vault
+
 from vault_net import __version__
-from vault_net.cli import main
+from vault_net.interface.cli.main import main
 
 
 def test_package_exposes_version() -> None:

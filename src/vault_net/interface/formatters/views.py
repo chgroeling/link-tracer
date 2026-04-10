@@ -2,18 +2,27 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import networkx as nx
 
 if TYPE_CHECKING:
-    from vault_net.models import VaultFile, VaultGraph
-    from vault_net.vault_registry import VaultRegistry
+    from vault_net.domain.models import VaultFile, VaultGraph
+
+
+class _Registry(Protocol):
+    def get_file(self, slug: str) -> Any | None: ...
+
+
+class _RegistryNote(Protocol):
+    slug: str
+
+    def to_file(self) -> VaultFile: ...
 
 
 def build_vault_edge_list(
     graph: VaultGraph,
-    vault_registry: VaultRegistry,
+    vault_registry: _Registry,
 ) -> list[list[VaultFile]]:
     """Return a resolved edge list with source/target `VaultFile` pairs."""
     edges: list[list[VaultFile]] = []
@@ -22,14 +31,16 @@ def build_vault_edge_list(
         target_file = vault_registry.get_file(target_slug)
         if source_file is None or target_file is None:
             continue
-        edges.append([source_file.to_file(), target_file.to_file()])
+        source_note = cast("_RegistryNote", source_file)
+        target_note = cast("_RegistryNote", target_file)
+        edges.append([source_note.to_file(), target_note.to_file()])
 
     return edges
 
 
 def build_adjacency_list(
     graph: VaultGraph,
-    vault_registry: VaultRegistry,
+    vault_registry: _Registry,
 ) -> dict[str, list[VaultFile]]:
     """Return source slug to resolved target `VaultFile` list."""
     payload: dict[str, list[VaultFile]] = {}
@@ -37,14 +48,16 @@ def build_adjacency_list(
         source_note = vault_registry.get_file(str(source_slug))
         if source_note is None:
             continue
+        resolved_source = cast("_RegistryNote", source_note)
 
         targets: list[VaultFile] = []
         for target_slug in sorted(graph.digraph.successors(source_slug)):
             target_note = vault_registry.get_file(str(target_slug))
             if target_note is None:
                 continue
-            targets.append(target_note.to_file())
-        payload[source_note.slug] = targets
+            resolved_target = cast("_RegistryNote", target_note)
+            targets.append(resolved_target.to_file())
+        payload[resolved_source.slug] = targets
 
     return payload
 
@@ -52,7 +65,7 @@ def build_adjacency_list(
 def build_layered_repr(
     source_slug: str,
     graph: VaultGraph,
-    vault_registry: VaultRegistry,
+    vault_registry: _Registry,
 ) -> dict[str, object]:
     """Transform an ego graph into a flat BFS depth-layer dictionary."""
     layers: list[dict[str, object]] = []
@@ -61,7 +74,8 @@ def build_layered_repr(
             note = vault_registry.get_file(str(node))
             if note is None:
                 continue
-            layers.append({"depth": depth, "note": note.to_file()})
+            resolved_note = cast("_RegistryNote", note)
+            layers.append({"depth": depth, "note": resolved_note.to_file()})
 
     return {
         "source_note": source_slug,
@@ -69,6 +83,3 @@ def build_layered_repr(
         "total_files": graph.digraph.number_of_nodes(),
         "layers": layers,
     }
-
-
-__all__ = ["build_adjacency_list", "build_layered_repr", "build_vault_edge_list"]
