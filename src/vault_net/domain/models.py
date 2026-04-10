@@ -97,3 +97,12 @@ class VaultIndex:
     def source_directory(self) -> str:
         """Return source directory path from metadata."""
         return self.metadata.root
+
+
+@dataclass(frozen=True, slots=True)
+class NoteLinkTrace:
+    """Result of tracing links from a single note."""
+
+    source_slug: str
+    vault_index: VaultIndex
+    neighborhood_graph: VaultGraph

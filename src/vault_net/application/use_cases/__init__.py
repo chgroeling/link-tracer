@@ -3,9 +3,11 @@
 from vault_net.application.use_cases.build_full_graph import BuildFullGraphUseCase
 from vault_net.application.use_cases.build_neighborhood_graph import BuildNeighborhoodGraphUseCase
 from vault_net.application.use_cases.scan_vault import ScanVaultUseCase
+from vault_net.application.use_cases.trace_note_links import TraceNoteLinksUseCase
 
 __all__ = [
     "BuildFullGraphUseCase",
     "BuildNeighborhoodGraphUseCase",
     "ScanVaultUseCase",
+    "TraceNoteLinksUseCase",
 ]

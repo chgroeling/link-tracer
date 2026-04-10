@@ -7,11 +7,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from vault_net.domain.models import VaultGraph, VaultIndex
+    from vault_net.domain.models import NoteLinkTrace, VaultGraph, VaultIndex
 
 from vault_net.application.use_cases.build_full_graph import BuildFullGraphUseCase
 from vault_net.application.use_cases.build_neighborhood_graph import BuildNeighborhoodGraphUseCase
 from vault_net.application.use_cases.scan_vault import ScanVaultUseCase
+from vault_net.application.use_cases.trace_note_links import TraceNoteLinksUseCase
 from vault_net.infrastructure.graph.networkx_graph_builder import NetworkXGraphBuilder
 from vault_net.infrastructure.scanner.matterify_scanner import MatterifyVaultScanner
 
@@ -45,3 +46,25 @@ def get_neighborhood_graph(
     """Return the directed neighborhood graph around `source_slug`."""
     use_case = BuildNeighborhoodGraphUseCase(graph_builder=NetworkXGraphBuilder())
     return use_case.execute(source_slug, graph, depth=depth)
+
+
+def trace_note_links(
+    vault_root: Path,
+    source_slug: str,
+    *,
+    depth: int = 1,
+    extra_exclude_dir: tuple[str, ...] = (),
+    no_default_excludes: bool = False,
+) -> NoteLinkTrace:
+    """Trace links from a note, returning the neighborhood graph and index."""
+    use_case = TraceNoteLinksUseCase(
+        scanner=MatterifyVaultScanner(),
+        graph_builder=NetworkXGraphBuilder(),
+    )
+    return use_case.execute(
+        vault_root,
+        source_slug,
+        depth=depth,
+        extra_exclude_dir=extra_exclude_dir,
+        no_default_excludes=no_default_excludes,
+    )

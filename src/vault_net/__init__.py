@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
 
-from vault_net.application.api import get_full_graph, get_neighborhood_graph, scan_vault
-from vault_net.domain.models import VaultGraph, VaultGraphMetadata, VaultIndex
+from vault_net.application.api import (
+    get_full_graph,
+    get_neighborhood_graph,
+    scan_vault,
+    trace_note_links,
+)
+from vault_net.domain.models import NoteLinkTrace, VaultGraph, VaultGraphMetadata, VaultIndex
 from vault_net.domain.services.vault_registry import VaultRegistry
 from vault_net.interface.formatters.views import build_vault_edge_list
 
@@ -16,13 +21,15 @@ except PackageNotFoundError:
 
 
 __all__ = [
+    "NoteLinkTrace",
     "VaultIndex",
     "VaultGraph",
     "VaultGraphMetadata",
     "VaultRegistry",
     "__version__",
-    "get_neighborhood_graph",
-    "get_full_graph",
     "build_vault_edge_list",
+    "get_full_graph",
+    "get_neighborhood_graph",
     "scan_vault",
+    "trace_note_links",
 ]

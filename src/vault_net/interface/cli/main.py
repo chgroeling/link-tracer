@@ -15,7 +15,11 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from vault_net.application import get_full_graph, get_neighborhood_graph, scan_vault
+from vault_net.application import (
+    get_full_graph,
+    scan_vault,
+    trace_note_links,
+)
 from vault_net.domain.services.vault_registry import VaultRegistry
 from vault_net.interface.formatters.views import (
     build_adjacency_list,
@@ -290,18 +294,20 @@ def note_graph(
     )
     vault_root = resolve_vault_root(vault_root)
     logger.info("tracing.links", slug=slug)
-    vault_index = scan_vault(
-        vault_root,
-        extra_exclude_dir=extra_exclude_dir,
-        no_default_excludes=no_default_excludes,
-    )
-    vault_registry = VaultRegistry(vault_index)
-    vault_graph = get_full_graph(vault_index=vault_index)
 
     try:
-        neighborhood_graph = get_neighborhood_graph(slug, vault_graph, depth=depth)
+        trace_result = trace_note_links(
+            vault_root,
+            slug,
+            depth=depth,
+            extra_exclude_dir=extra_exclude_dir,
+            no_default_excludes=no_default_excludes,
+        )
     except KeyError as exc:
         raise click.UsageError(f"Unknown slug '{slug}'.") from exc
+
+    vault_registry = VaultRegistry(trace_result.vault_index)
+    neighborhood_graph = trace_result.neighborhood_graph
 
     payload_obj: object
     if style == "layered":
