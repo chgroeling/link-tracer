@@ -96,28 +96,37 @@ def _depth_text(depth: int) -> Text:
     return Text(str(depth), style="green")
 
 
-def _render_edge_list_table(graph: VaultGraph, vault_registry: VaultRegistry) -> Table:
+def _strip_path_and_ext(path: str) -> str:
+    """Return filename without directory path or extension."""
+    return Path(path).stem
+
+
+def _render_edge_list_table(
+    graph: VaultGraph, vault_registry: VaultRegistry, use_basename: bool = False
+) -> Table:
     table = Table(show_header=True, header_style="bold", box=None)
     table.add_column("Src Slug")
     table.add_column("Tgt Slug")
-    table.add_column("Source Path")
-    table.add_column("Target Path")
+    table.add_column("Source Name" if use_basename else "Source Path")
+    table.add_column("Target Name" if use_basename else "Target Path")
 
     for source, target in build_vault_edge_list(graph, vault_registry):
         table.add_row(
             _slug_text(source.slug),
             _slug_text(target.slug),
-            _path_text(source.file_path),
-            _path_text(target.file_path),
+            _path_text(_strip_path_and_ext(source.file_path) if use_basename else source.file_path),
+            _path_text(_strip_path_and_ext(target.file_path) if use_basename else target.file_path),
         )
 
     return table
 
 
-def _render_adjacency_list_table(graph: VaultGraph, vault_registry: VaultRegistry) -> Table:
+def _render_adjacency_list_table(
+    graph: VaultGraph, vault_registry: VaultRegistry, use_basename: bool = False
+) -> Table:
     table = Table(show_header=True, header_style="bold", box=None)
     table.add_column("Slug")
-    table.add_column("Path")
+    table.add_column("Name" if use_basename else "Path")
     table.add_column("Targets")
 
     for source_slug in sorted(graph.digraph.nodes()):
@@ -131,9 +140,10 @@ def _render_adjacency_list_table(graph: VaultGraph, vault_registry: VaultRegistr
                 continue
             target_slugs.append(str(target_slug))
 
+        file_path = source_note.file_path
         table.add_row(
             _slug_text(source_note.slug),
-            _path_text(source_note.file_path),
+            _path_text(_strip_path_and_ext(file_path) if use_basename else file_path),
             _slug_text(", ".join(target_slugs) if target_slugs else "-"),
         )
 
@@ -141,12 +151,12 @@ def _render_adjacency_list_table(graph: VaultGraph, vault_registry: VaultRegistr
 
 
 def _render_layered_table(
-    source_slug: str, graph: VaultGraph, vault_registry: VaultRegistry
+    source_slug: str, graph: VaultGraph, vault_registry: VaultRegistry, use_basename: bool = False
 ) -> Table:
     table = Table(show_header=True, header_style="bold", box=None)
     table.add_column("Slug")
     table.add_column("Depth")
-    table.add_column("Path")
+    table.add_column("Name" if use_basename else "Path")
 
     layered = _serialize_layered_repr(source_slug, graph, vault_registry)
     raw_layers = layered.get("layers", [])
@@ -164,7 +174,11 @@ def _render_layered_table(
         depth = entry.get("depth")
         if not isinstance(slug, str) or not isinstance(path, str) or not isinstance(depth, int):
             continue
-        table.add_row(_slug_text(slug), _depth_text(depth), _path_text(path))
+        table.add_row(
+            _slug_text(slug),
+            _depth_text(depth),
+            _path_text(_strip_path_and_ext(path) if use_basename else path),
+        )
 
     return table
 
@@ -273,6 +287,11 @@ def _serialize_layered_repr(
     is_flag=True,
     help="Disable built-in default exclusions; use only --exclude-dir entries",
 )
+@click.option(
+    "--basename",
+    is_flag=True,
+    help="Show only filenames without path or extension in pretty output",
+)
 def note_graph(
     slug: str,
     vault_root: Path | None,
@@ -284,6 +303,7 @@ def note_graph(
     output_format: str,
     extra_exclude_dir: tuple[str, ...],
     no_default_excludes: bool,
+    basename: bool,
 ) -> int:
     """Trace links for a single note."""
     configure_debug_logging(debug)
@@ -320,11 +340,17 @@ def note_graph(
     if output_format == "json":
         emit_json_output(json.dumps(payload_obj, indent=2), output)
     elif style == "layered":
-        emit_pretty_output(_render_layered_table(slug, neighborhood_graph, vault_registry), output)
+        emit_pretty_output(
+            _render_layered_table(slug, neighborhood_graph, vault_registry, basename), output
+        )
     elif style == "adjacency_list":
-        emit_pretty_output(_render_adjacency_list_table(neighborhood_graph, vault_registry), output)
+        emit_pretty_output(
+            _render_adjacency_list_table(neighborhood_graph, vault_registry, basename), output
+        )
     else:
-        emit_pretty_output(_render_edge_list_table(neighborhood_graph, vault_registry), output)
+        emit_pretty_output(
+            _render_edge_list_table(neighborhood_graph, vault_registry, basename), output
+        )
     console.print("Link tracing complete")
     logger.info("link.tracing.complete")
     return 0
@@ -430,6 +456,11 @@ def index_cmd(
     is_flag=True,
     help="Disable built-in default exclusions; use only --exclude-dir entries",
 )
+@click.option(
+    "--basename",
+    is_flag=True,
+    help="Show only filenames without path or extension in pretty output",
+)
 def graph_cmd(
     vault_root: Path | None,
     output: Path | None,
@@ -439,6 +470,7 @@ def graph_cmd(
     output_format: str,
     extra_exclude_dir: tuple[str, ...],
     no_default_excludes: bool,
+    basename: bool,
 ) -> int:
     """Output a resolved edge list with lightweight `VaultFile` entries."""
     configure_debug_logging(debug)
@@ -464,9 +496,11 @@ def graph_cmd(
     if output_format == "json":
         emit_json_output(json.dumps(payload_obj, indent=2), output)
     elif style == "adjacency_list":
-        emit_pretty_output(_render_adjacency_list_table(vault_graph, vault_registry), output)
+        emit_pretty_output(
+            _render_adjacency_list_table(vault_graph, vault_registry, basename), output
+        )
     else:
-        emit_pretty_output(_render_edge_list_table(vault_graph, vault_registry), output)
+        emit_pretty_output(_render_edge_list_table(vault_graph, vault_registry, basename), output)
     console.print("Vault edge list complete")
     logger.info("vault.edge.list.complete")
     return 0

@@ -273,3 +273,87 @@ def test_graph_adjacency_pretty_includes_slug_column(tmp_path: Path) -> None:
     assert "Slug" in result.output
     assert "Path" in result.output
     assert "Targets" in result.output
+
+
+def test_note_graph_basename_strips_path_and_extension(tmp_path: Path) -> None:
+    """--basename shows filename without path or extension in Path columns."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "home.md").write_text("[[about]]", encoding="utf-8")
+    (vault / "about.md").write_text("", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["note-graph", "home.md", "--vault-root", str(vault), "--basename"],
+    )
+
+    assert result.exit_code == 0
+    assert "home" in result.output
+    assert "about" in result.output
+    assert str(vault) not in result.output
+
+
+def test_graph_basename_strips_path_and_extension(tmp_path: Path) -> None:
+    """--basename shows filename without path or extension in Path columns."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "home.md").write_text("[[about]]", encoding="utf-8")
+    (vault / "about.md").write_text("", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["graph", "--vault-root", str(vault), "--basename"],
+    )
+
+    assert result.exit_code == 0
+    assert "home" in result.output
+    assert "about" in result.output
+    assert str(vault) not in result.output
+
+
+def test_note_graph_basename_layered_style(tmp_path: Path) -> None:
+    """--basename works with layered style."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "home.md").write_text("[[about]]", encoding="utf-8")
+    (vault / "about.md").write_text("", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["note-graph", "home.md", "--vault-root", str(vault), "--style", "layered", "--basename"],
+    )
+
+    assert result.exit_code == 0
+    assert "home" in result.output
+    assert "about" in result.output
+    assert str(vault) not in result.output
+
+
+def test_note_graph_basename_adjacency_style(tmp_path: Path) -> None:
+    """--basename works with adjacency_list style."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "home.md").write_text("[[about]]", encoding="utf-8")
+    (vault / "about.md").write_text("", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "note-graph",
+            "home.md",
+            "--vault-root",
+            str(vault),
+            "--style",
+            "adjacency_list",
+            "--basename",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "home" in result.output
+    assert "about" in result.output
+    assert str(vault) not in result.output
