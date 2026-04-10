@@ -1,0 +1,119 @@
+"""Domain service tests for slug generation."""
+
+from __future__ import annotations
+
+from vault_net.domain.services.slug_service import generate_slug
+
+
+def test_generate_slug_simple_filename() -> None:
+    """Simple filename generates slug without modification."""
+    slug_counts: dict[str, int] = {}
+    result = generate_slug("note", slug_counts)
+    assert result == "note"
+
+
+def test_generate_slug_truncates_long_filename() -> None:
+    """Filename longer than SLUG_LENGTH is truncated."""
+    slug_counts: dict[str, int] = {}
+    result = generate_slug("verylongfilename", slug_counts)
+    assert len(result) <= 8
+    assert result == "verylong"
+
+
+def test_generate_slug_replaces_spaces_with_dashes() -> None:
+    """Spaces in filename are replaced with dashes."""
+    slug_counts: dict[str, int] = {}
+    result = generate_slug("my note", slug_counts)
+    assert result == "my-note"
+
+
+def test_generate_slug_truncates_and_replaces_spaces() -> None:
+    """Long filename with spaces is truncated and spaces are replaced."""
+    slug_counts: dict[str, int] = {}
+    result = generate_slug("my long note name", slug_counts)
+    assert " " not in result
+    assert result.startswith("my-")
+    assert len(result) <= 8
+
+
+def test_generate_slug_first_duplicate_gets_suffix() -> None:
+    """First collision appends _0 suffix."""
+    slug_counts: dict[str, int] = {}
+    first = generate_slug("note", slug_counts)
+    second = generate_slug("note", slug_counts)
+    assert first == "note"
+    assert second == "note_0"
+
+
+def test_generate_slug_second_duplicate_gets_incremented_suffix() -> None:
+    """Second collision increments suffix to _1."""
+    slug_counts: dict[str, int] = {}
+    generate_slug("note", slug_counts)
+    generate_slug("note", slug_counts)
+    third = generate_slug("note", slug_counts)
+    assert third == "note_1"
+
+
+def test_generate_slug_different_filenames_independent() -> None:
+    """Different filenames do not collide."""
+    slug_counts: dict[str, int] = {}
+    note_slug = generate_slug("note", slug_counts)
+    other_slug = generate_slug("other", slug_counts)
+    assert note_slug == "note"
+    assert other_slug == "other"
+
+
+def test_generate_slug_collision_shortens_base_when_needed() -> None:
+    """When suffix would exceed SLUG_LENGTH, base is shortened."""
+    slug_counts: dict[str, int] = {}
+    generate_slug("longname", slug_counts)
+    result = generate_slug("longname", slug_counts)
+    assert len(result) <= 8
+    assert result.startswith("longn")
+
+
+def test_generate_slug_updates_counts_for_tracking() -> None:
+    """slug_counts is updated to track collisions."""
+    slug_counts: dict[str, int] = {}
+    generate_slug("note", slug_counts)
+    generate_slug("note", slug_counts)
+    assert slug_counts["note"] == 1
+    assert "note" in slug_counts
+
+
+def test_generate_slug_handles_reserved_suffix_collision() -> None:
+    """Collision with existing _N suffix skips to next available."""
+    slug_counts: dict[str, int] = {}
+    result1 = generate_slug("longname", slug_counts)
+    result2 = generate_slug("longname", slug_counts)
+    result3 = generate_slug("longname_0", slug_counts)
+    assert result1 == "longname"
+    assert result2 == "longna_0"
+    assert result3 == "longna_1"
+
+
+def test_generate_slug_respects_max_length() -> None:
+    """All generated slugs remain within SLUG_LENGTH."""
+    slug_counts: dict[str, int] = {}
+    result = generate_slug("longfilename", slug_counts)
+    assert len(result) <= 8
+
+
+def test_generate_slug_many_collisions_remain_unique() -> None:
+    """Slug generation handles many collisions and produces unique slugs."""
+    slug_counts: dict[str, int] = {}
+    slugs = [generate_slug("filename", slug_counts) for _ in range(12)]
+    assert len(slugs) == len(set(slugs)), "All slugs must be unique"
+    for slug in slugs:
+        assert len(slug) <= 8
+
+
+def test_generate_slug_collision_at_length_boundary() -> None:
+    """Collision near max length produces correct shortened base + suffix."""
+    slug_counts: dict[str, int] = {}
+    slug1 = generate_slug("abcdefgh", slug_counts)
+    slug2 = generate_slug("abcdefgh", slug_counts)
+    assert len(slug1) <= 8
+    assert len(slug2) <= 8
+    assert slug1 == "abcdefgh"
+    assert slug2 == "abcdef_0"

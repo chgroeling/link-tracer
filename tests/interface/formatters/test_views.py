@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
 
 import networkx as nx
 
@@ -76,7 +75,7 @@ def test_build_layered_repr_backlinks_appear_at_depth_one() -> None:
     graph: nx.DiGraph[str] = nx.DiGraph()
     graph.add_edge("other.md", "home.md")
     result = build_layered_repr("home.md", _build_graph(graph), _build_registry(graph))
-    layers = cast("list[dict[str, Any]]", result["layers"])
+    layers = result["layers"]
     depths = {entry["note"].slug: entry["depth"] for entry in layers}
     assert depths["home.md"] == 0
     assert depths["other.md"] == 1
@@ -88,7 +87,7 @@ def test_build_layered_repr_two_hop_note_appears_at_depth_two() -> None:
     graph.add_edge("home.md", "about.md")
     graph.add_edge("about.md", "projects.md")
     result = build_layered_repr("home.md", _build_graph(graph), _build_registry(graph))
-    layers = cast("list[dict[str, Any]]", result["layers"])
+    layers = result["layers"]
     depths = {entry["note"].slug: entry["depth"] for entry in layers}
     assert depths["home.md"] == 0
     assert depths["about.md"] == 1

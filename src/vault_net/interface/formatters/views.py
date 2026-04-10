@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, TypedDict, cast
 
 import networkx as nx
 
 if TYPE_CHECKING:
     from vault_net.domain.models import VaultFile, VaultGraph
+
+
+class _LayerEntry(TypedDict):
+    depth: int
+    note: VaultFile
+
+
+class _LayeredRepr(TypedDict):
+    source_note: str
+    vault_root: str
+    total_files: int
+    layers: list[_LayerEntry]
 
 
 class _Registry(Protocol):
@@ -66,9 +78,9 @@ def build_layered_repr(
     source_slug: str,
     graph: VaultGraph,
     vault_registry: _Registry,
-) -> dict[str, object]:
+) -> _LayeredRepr:
     """Transform an ego graph into a flat BFS depth-layer dictionary."""
-    layers: list[dict[str, object]] = []
+    layers: list[_LayerEntry] = []
     for depth, nodes in enumerate(nx.bfs_layers(graph.digraph.to_undirected(), [source_slug])):
         for node in nodes:
             note = vault_registry.get_file(str(node))
