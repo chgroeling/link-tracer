@@ -1,344 +1,60 @@
-"""Unit tests for the note_graph module."""
+"""Unit tests for ego graph extraction."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from vault_net import NoteGraph, build_note_graph, build_vault_graph, scan_vault
+from vault_net import build_note_ego_graph, build_vault_digraph, scan_vault
 
 
-def test_build_note_graph_uses_prebuilt_index(tmp_path: Path) -> None:
-    """build_note_graph() works with a prebuilt VaultGraph."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "home.md").write_text("---\ntitle: Home\n---\n[[about]]", encoding="utf-8")
-    (vault_root / "about.md").write_text("---\ntitle: About\n---", encoding="utf-8")
-    note_path = vault_root / "home.md"
-
-    vault_index = scan_vault(vault_root)
-    vault_graph = build_vault_graph(vault_index)
-    result = build_note_graph(note_path, vault_graph, vault_index)
-
-    assert isinstance(result, NoteGraph)
-    assert result.vault_root == str(vault_root)
-    assert set(result.edges) == {"home.md"}
-    assert [edge.target_note for edge in result.edges["home.md"]] == ["about.md"]
-    assert result.edges["home.md"][0].resolved is True
-
-
-def test_build_note_graph_multiple_calls_reuse_same_index(tmp_path: Path) -> None:
-    """Multiple build_note_graph() calls with same vault response do not rescan."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "home.md").write_text("[[about]]", encoding="utf-8")
-    (vault_root / "about.md").write_text("[[home]]", encoding="utf-8")
-    (vault_root / "contact.md").write_text("", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_graph = build_vault_graph(vault_index)
-
-    with patch("vault_net.scan.scan_directory") as mock_scan:
-        build_note_graph(vault_root / "home.md", vault_graph, vault_index)
-        build_note_graph(vault_root / "about.md", vault_graph, vault_index)
-
-    mock_scan.assert_not_called()
-
-
-def test_build_note_graph_rejects_negative_depth(tmp_path: Path) -> None:
-    """build_note_graph() raises ValueError for depth < 0."""
+def test_build_note_ego_graph_rejects_negative_depth(tmp_path: Path) -> None:
+    """Negative depth raises ValueError."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
     (vault_root / "a.md").write_text("", encoding="utf-8")
-    vault_index = scan_vault(vault_root)
-    vault_graph = build_vault_graph(vault_index)
+
+    graph = build_vault_digraph(scan_vault(vault_root))
     with pytest.raises(ValueError, match="depth must be >= 0"):
-        build_note_graph(vault_root / "a.md", vault_graph, vault_index, depth=-1)
+        build_note_ego_graph("a.md", graph, depth=-1)
 
 
-def test_build_note_graph_default_depth_is_one(tmp_path: Path) -> None:
-    """build_note_graph() defaults to depth=1 (direct links only)."""
+def test_build_note_ego_graph_requires_known_slug(tmp_path: Path) -> None:
+    """Unknown slug raises KeyError."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    (vault_root / "a.md").write_text("", encoding="utf-8")
+
+    graph = build_vault_digraph(scan_vault(vault_root))
+    with pytest.raises(KeyError):
+        build_note_ego_graph("missing.md", graph, depth=1)
+
+
+def test_build_note_ego_graph_depth_zero_returns_source_only(tmp_path: Path) -> None:
+    """Depth zero keeps only the source node and no edges."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
     (vault_root / "a.md").write_text("[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("[[c]]", encoding="utf-8")
-    (vault_root / "c.md").write_text("", encoding="utf-8")
-    vault_index = scan_vault(vault_root)
-    vault_graph = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "a.md", vault_graph, vault_index)
-    assert set(result.edges) == {"a.md"}
-    assert [e.target_note for e in result.edges["a.md"]] == ["b.md"]
+    (vault_root / "b.md").write_text("", encoding="utf-8")
+
+    graph = build_vault_digraph(scan_vault(vault_root))
+    ego = build_note_ego_graph("a.md", graph, depth=0)
+
+    assert sorted(ego.nodes()) == ["a.md"]
+    assert list(ego.edges()) == []
 
 
-def test_build_note_graph_depth_zero_returns_source_only(tmp_path: Path) -> None:
-    """depth=0 returns only the source note with no edges."""
+def test_build_note_ego_graph_uses_undirected_neighborhood(tmp_path: Path) -> None:
+    """Depth one includes outgoing links and backlinks."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
-    (vault_root / "home.md").write_text("---\ntitle: Home\n---\n[[about]]", encoding="utf-8")
-    (vault_root / "about.md").write_text("---\ntitle: About\n---\n[[contact]]", encoding="utf-8")
-    (vault_root / "contact.md").write_text("---\ntitle: Contact\n---\nNo links", encoding="utf-8")
+    (vault_root / "a.md").write_text("[[b]]", encoding="utf-8")
+    (vault_root / "b.md").write_text("", encoding="utf-8")
+    (vault_root / "c.md").write_text("[[a]]", encoding="utf-8")
 
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=0)
+    graph = build_vault_digraph(scan_vault(vault_root))
+    ego = build_note_ego_graph("a.md", graph, depth=1)
 
-    assert result.metadata.total_files == 1
-    assert result.edges == {}
-
-
-def test_build_note_graph_depth_one_returns_direct_links(tmp_path: Path) -> None:
-    """depth=1 returns source note and direct outgoing link edges."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "home.md").write_text("---\ntitle: Home\n---\n[[about]]", encoding="utf-8")
-    (vault_root / "about.md").write_text("---\ntitle: About\n---\n[[contact]]", encoding="utf-8")
-    (vault_root / "contact.md").write_text("---\ntitle: Contact\n---\nNo links", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=1)
-
-    assert result.metadata.total_files == 2
-    assert set(result.edges) == {"home.md"}
-    assert [edge.target_note for edge in result.edges["home.md"]] == ["about.md"]
-
-
-def test_build_note_graph_uses_indexed_links_without_file_reads(tmp_path: Path) -> None:
-    """build_note_graph() uses indexed link payloads when available."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "home.md").write_text("---\ntitle: Home\n---\n[[about]]", encoding="utf-8")
-    (vault_root / "about.md").write_text("---\ntitle: About\n---\nNo links", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-
-    with patch.object(Path, "read_text", side_effect=AssertionError("unexpected file read")):
-        result = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=1)
-
-    assert set(result.edges) == {"home.md"}
-    assert [edge.target_note for edge in result.edges["home.md"]] == ["about.md"]
-
-
-def test_build_note_graph_depth_two_returns_children_links(tmp_path: Path) -> None:
-    """depth=2 returns outgoing edges for source and first-level children."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "home.md").write_text("---\ntitle: Home\n---\n[[about]]", encoding="utf-8")
-    (vault_root / "about.md").write_text("---\ntitle: About\n---\n[[contact]]", encoding="utf-8")
-    (vault_root / "contact.md").write_text(
-        "---\ntitle: Contact\n---\n[[archive]]", encoding="utf-8"
-    )
-    (vault_root / "archive.md").write_text("---\ntitle: Archive\n---\nNo links", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=2)
-
-    assert result.metadata.total_files == 3
-    assert set(result.edges) == {"home.md", "about.md"}
-    assert [edge.target_note for edge in result.edges["home.md"]] == ["about.md"]
-    assert [edge.target_note for edge in result.edges["about.md"]] == ["contact.md"]
-
-
-def test_build_note_graph_depth_three_returns_grandchildren_links(tmp_path: Path) -> None:
-    """depth=3 traverses three levels deep."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("---\ntitle: B\n---\n[[c]]", encoding="utf-8")
-    (vault_root / "c.md").write_text("---\ntitle: C\n---\n[[d]]", encoding="utf-8")
-    (vault_root / "d.md").write_text("---\ntitle: D\n---\n[[e]]", encoding="utf-8")
-    (vault_root / "e.md").write_text("---\ntitle: E\n---\nNo links", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "a.md", vault_response, vault_index, depth=3)
-
-    assert result.metadata.total_files == 4
-    assert set(result.edges) == {"a.md", "b.md", "c.md"}
-
-
-def test_build_note_graph_circular_links_no_infinite_loop(tmp_path: Path) -> None:
-    """Circular links (A->B->A) do not cause infinite loop."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("---\ntitle: B\n---\n[[a]]", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "a.md", vault_response, vault_index, depth=5)
-
-    assert result.metadata.total_files == 2
-    assert set(result.edges) == {"a.md", "b.md"}
-    assert [edge.target_note for edge in result.edges["a.md"]] == ["b.md"]
-    assert [edge.target_note for edge in result.edges["b.md"]] == ["a.md"]
-
-
-def test_build_note_graph_includes_unresolved_edges(tmp_path: Path) -> None:
-    """Unresolvable file links are reported as unresolved edges."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "home.md").write_text(
-        "---\ntitle: Home\n---\n[[about]] and [[missing-note]]", encoding="utf-8"
-    )
-    (vault_root / "about.md").write_text("---\ntitle: About\n---\nNo links", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "home.md", vault_response, vault_index, depth=1)
-
-    assert set(result.edges) == {"home.md"}
-    assert result.edges["home.md"][0].resolved is True
-    assert result.edges["home.md"][0].target_note == "about.md"
-    assert result.edges["home.md"][0].link.target == "about"
-    assert result.edges["home.md"][1].resolved is False
-    assert result.edges["home.md"][1].target_note is None
-    assert result.edges["home.md"][1].unresolved_reason == "not_found"
-    assert result.edges["home.md"][1].link.target == "missing-note"
-
-
-def test_build_note_graph_external_note_outside_vault_uses_fallback_parsing(tmp_path: Path) -> None:
-    """External source note still resolves links via fallback parsing."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "about.md").write_text("---\ntitle: About\n---\nNo links", encoding="utf-8")
-
-    external_root = tmp_path / "external"
-    external_root.mkdir()
-    external_note = external_root / "outside.md"
-    external_note.write_text("[[about]] and [[missing-note]]", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(external_note, vault_response, vault_index, depth=1)
-
-    source_key = str(external_note.resolve())
-    assert result.source_note == source_key
-    assert set(result.edges) == {source_key}
-    assert result.edges[source_key][0].resolved is True
-    assert result.edges[source_key][0].target_note == "about.md"
-    assert result.edges[source_key][1].resolved is False
-    assert result.edges[source_key][1].target_note is None
-    assert result.edges[source_key][1].unresolved_reason == "not_found"
-
-
-# ---------------------------------------------------------------------------
-# Backlink tests
-# ---------------------------------------------------------------------------
-
-
-def test_backlinks_depth_one_shows_incoming_edges(tmp_path: Path) -> None:
-    """depth=1 includes backlink edges from notes that link to the source."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("---\ntitle: B\n---\nNo links", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "b.md", vault_response, vault_index, depth=1)
-
-    # b.md has no forward edges, but a.md links to b.md → backlink
-    assert "a.md" in result.edges
-    backlink_edges = result.edges["a.md"]
-    assert len(backlink_edges) == 1
-    assert backlink_edges[0].target_note == "b.md"
-    assert backlink_edges[0].resolved is True
-
-
-def test_backlinks_depth_two_bidirectional(tmp_path: Path) -> None:
-    """depth=2 traverses forward and backward across two levels."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("---\ntitle: B\n---\n[[c]]", encoding="utf-8")
-    (vault_root / "c.md").write_text("---\ntitle: C\n---\nNo links", encoding="utf-8")
-    (vault_root / "d.md").write_text("---\ntitle: D\n---\n[[a]]", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "b.md", vault_response, vault_index, depth=2)
-
-    # depth=1 from b: forward→c, backlink a→b
-    # depth=2 from c: no forward, no backlinks besides b→c (already visited)
-    # depth=2 from a: forward a→b (already visited), backlink d→a
-    assert "b.md" in result.edges  # forward b→c
-    assert "a.md" in result.edges  # a→b (backlink at depth=1, forward at depth=2)
-    assert "d.md" in result.edges  # d→a (backlink at depth=2)
-
-    assert any(e.target_note == "c.md" for e in result.edges["b.md"])
-    assert any(e.target_note == "b.md" for e in result.edges["a.md"])
-    assert any(e.target_note == "a.md" for e in result.edges["d.md"])
-
-
-def test_backlink_no_duplicate_when_forward_visited(tmp_path: Path) -> None:
-    """A backlink edge is not duplicated when the source is also forward-visited."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    # a→b and b→a: circular. Resolve a at depth=2.
-    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("---\ntitle: B\n---\n[[a]]", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "a.md", vault_response, vault_index, depth=2)
-
-    # a.md should have exactly one edge a→b (no duplicate from backlink discovery)
-    assert len(result.edges.get("a.md", [])) == 1
-    assert result.edges["a.md"][0].target_note == "b.md"
-
-    # b.md should have exactly one edge b→a
-    assert len(result.edges.get("b.md", [])) == 1
-    assert result.edges["b.md"][0].target_note == "a.md"
-
-
-def test_no_backlinks_for_isolated_note(tmp_path: Path) -> None:
-    """A note with no incoming links has no backlink edges."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("---\ntitle: B\n---\nNo links", encoding="utf-8")
-    (vault_root / "c.md").write_text("---\ntitle: C\n---\nNo links", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    # Resolve a.md — nobody links to a.md, so no backlinks
-    result = build_note_graph(vault_root / "a.md", vault_response, vault_index, depth=1)
-
-    assert set(result.edges) == {"a.md"}
-    assert all(e.resolved for e in result.edges["a.md"])
-
-
-def test_backlink_circular_links_no_infinite_loop(tmp_path: Path) -> None:
-    """Circular links with backlinks do not cause infinite loop."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("---\ntitle: B\n---\n[[a]]", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "a.md", vault_response, vault_index, depth=5)
-
-    assert result.metadata.total_files == 2
-    assert "a.md" in result.edges
-    assert "b.md" in result.edges
-
-
-def test_backlinks_depth_zero_no_edges(tmp_path: Path) -> None:
-    """depth=0 returns no edges even when backlinks exist."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "a.md").write_text("---\ntitle: A\n---\n[[b]]", encoding="utf-8")
-    (vault_root / "b.md").write_text("---\ntitle: B\n---\nNo links", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    vault_response = build_vault_graph(vault_index)
-    result = build_note_graph(vault_root / "b.md", vault_response, vault_index, depth=0)
-
-    assert result.edges == {}
-    assert result.metadata.total_files == 1
+    assert sorted(ego.nodes()) == ["a.md", "b.md", "c.md"]
+    assert sorted(ego.edges()) == [("a.md", "b.md"), ("c.md", "a.md")]

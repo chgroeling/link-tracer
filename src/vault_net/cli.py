@@ -6,20 +6,23 @@ import json
 import os
 from dataclasses import asdict
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 import structlog
 
 from vault_net import (
     VaultRegistry,
-    build_note_graph,
-    build_vault_edge_list,
-    build_vault_graph,
+    build_note_ego_graph,
+    build_vault_digraph,
     scan_vault,
 )
 from vault_net.logging import configure_debug_logging, get_console
-from vault_net.transforms import to_layered
+from vault_net.transforms import build_vault_edge_list, to_layered
 from vault_net.utils import collapse_vault_file_json
+
+if TYPE_CHECKING:
+    import networkx as nx
 
 logger = structlog.get_logger(__name__)
 
@@ -68,8 +71,45 @@ def main() -> None:
     """Trace Obsidian note links to filesystem sources."""
 
 
+def _serialize_edge_list(
+    graph: nx.DiGraph[str],
+    vault_registry: VaultRegistry,
+) -> list[list[object]]:
+    """Serialize graph edges to lightweight `VaultFile` pairs."""
+    payload: list[list[object]] = []
+    for source_slug, target_slug in sorted(graph.edges()):
+        source_file = vault_registry.get_file(str(source_slug))
+        target_file = vault_registry.get_file(str(target_slug))
+        if source_file is None or target_file is None:
+            continue
+        payload.append([asdict(source_file.to_file()), asdict(target_file.to_file())])
+    return payload
+
+
+def _serialize_adjacency_list(
+    graph: nx.DiGraph[str],
+    vault_registry: VaultRegistry,
+) -> dict[str, list[object]]:
+    """Serialize graph adjacency as source slug -> target VaultFile list."""
+    payload: dict[str, list[object]] = {}
+    for source_slug in sorted(graph.nodes()):
+        source_note = vault_registry.get_file(str(source_slug))
+        if source_note is None:
+            continue
+
+        targets: list[object] = []
+        for target_slug in sorted(graph.successors(source_slug)):
+            target_note = vault_registry.get_file(str(target_slug))
+            if target_note is None:
+                continue
+            targets.append(asdict(target_note.to_file()))
+        payload[source_note.slug] = targets
+
+    return payload
+
+
 @main.command("note-graph")
-@click.argument("note", type=click.Path(exists=True, path_type=Path))
+@click.argument("slug", type=str)
 @click.option(
     "--vault-root",
     type=click.Path(path_type=Path),
@@ -95,9 +135,9 @@ def main() -> None:
 @click.option(
     "--format",
     "fmt",
-    type=click.Choice(["edges", "layered"], case_sensitive=False),
-    default="edges",
-    help="Output graph representation (edges: full edge dict, layered: BFS depth layers)",
+    type=click.Choice(["edge_list", "adjacency_list", "layered"], case_sensitive=False),
+    default="edge_list",
+    help="Output graph representation",
 )
 @click.option(
     "-e",
@@ -113,7 +153,7 @@ def main() -> None:
     help="Disable built-in default exclusions; use only --exclude-dir entries",
 )
 def note_graph(
-    note: Path,
+    slug: str,
     vault_root: Path | None,
     depth: int,
     output: Path | None,
@@ -128,21 +168,28 @@ def note_graph(
     console = get_console(verbose)
 
     logger.debug(
-        "Starting link tracer", note=str(note), vault_root=str(vault_root) if vault_root else None
+        "Starting link tracer", slug=slug, vault_root=str(vault_root) if vault_root else None
     )
     vault_root = resolve_vault_root(vault_root)
-    logger.info("Tracing links", note=str(note))
+    logger.info("Tracing links", slug=slug)
     vault_index = scan_vault(
         vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
     )
-    vault_graph = build_vault_graph(vault_index=vault_index)
-    note_graph = build_note_graph(
-        note_path=note, vault_graph=vault_graph, vault_index=vault_index, depth=depth
-    )
+    vault_registry = VaultRegistry(vault_index)
+    vault_digraph = build_vault_digraph(vault_index=vault_index)
+
+    try:
+        ego_graph = build_note_ego_graph(slug, vault_digraph, depth=depth)
+    except KeyError as exc:
+        raise click.UsageError(f"Unknown slug '{slug}'.") from exc
+
     if fmt == "layered":
-        payload = json.dumps(asdict(to_layered(note_graph.source_note, note_graph)), indent=2)
+        payload = json.dumps(asdict(to_layered(slug, ego_graph, vault_root)), indent=2)
+    elif fmt == "adjacency_list":
+        payload = json.dumps(_serialize_adjacency_list(ego_graph, vault_registry), indent=2)
     else:
-        payload = json.dumps(asdict(note_graph), indent=2)
+        payload = json.dumps(_serialize_edge_list(ego_graph, vault_registry), indent=2)
+
     payload = collapse_vault_file_json(payload)
     emit_json_output(payload, output)
     console.print("Link tracing complete")
@@ -205,62 +252,6 @@ def index_cmd(
     return 0
 
 
-@main.command("vault-graph")
-@click.option(
-    "--vault-root",
-    type=click.Path(path_type=Path),
-    default=None,
-    help="Vault root directory (overrides VAULT_ROOT env and .vault file)",
-)
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(path_type=Path, dir_okay=False),
-    default=None,
-    help="Write JSON output to file instead of stdout",
-)
-@click.option("--debug", is_flag=True, help="Enable debug-level structured logging to stderr")
-@click.option("--verbose", is_flag=True, help="Enable verbose console output")
-@click.option(
-    "-e",
-    "--exclude-dir",
-    "extra_exclude_dir",
-    multiple=True,
-    metavar="DIR",
-    help="Additional directory name to exclude from traversal (repeatable)",
-)
-@click.option(
-    "--no-default-excludes",
-    is_flag=True,
-    help="Disable built-in default exclusions; use only --exclude-dir entries",
-)
-def vault_graph(
-    vault_root: Path | None,
-    output: Path | None,
-    debug: bool,
-    verbose: bool,
-    extra_exclude_dir: tuple[str, ...],
-    no_default_excludes: bool,
-) -> int:
-    """Trace links for every note in the vault."""
-    configure_debug_logging(debug)
-    console = get_console(verbose)
-
-    logger.debug("Starting vault link tracer", vault_root=str(vault_root) if vault_root else None)
-    vault_root = resolve_vault_root(vault_root)
-    logger.info("Tracing vault links", vault_root=str(vault_root))
-    vault_index = scan_vault(
-        vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
-    )
-    vault_graph = build_vault_graph(vault_index=vault_index)
-    payload = json.dumps(asdict(vault_graph), indent=2)
-    payload = collapse_vault_file_json(payload)
-    emit_json_output(payload, output)
-    console.print("Vault link tracing complete")
-    logger.info("Vault link tracing complete")
-    return 0
-
-
 @main.command("edges")
 @click.option(
     "--vault-root",
@@ -277,6 +268,13 @@ def vault_graph(
 )
 @click.option("--debug", is_flag=True, help="Enable debug-level structured logging to stderr")
 @click.option("--verbose", is_flag=True, help="Enable verbose console output")
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["edge_list", "adjacency_list"], case_sensitive=False),
+    default="edge_list",
+    help="Output graph representation",
+)
 @click.option(
     "-e",
     "--exclude-dir",
@@ -295,6 +293,7 @@ def edge_list(
     output: Path | None,
     debug: bool,
     verbose: bool,
+    fmt: str,
     extra_exclude_dir: tuple[str, ...],
     no_default_excludes: bool,
 ) -> int:
@@ -309,8 +308,14 @@ def edge_list(
         vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
     )
     vault_registry = VaultRegistry(vault_index)
-    edges = build_vault_edge_list(vault_index, vault_registry)
-    payload = json.dumps([[asdict(file) for file in edge] for edge in edges], indent=2)
+
+    if fmt == "adjacency_list":
+        digraph = build_vault_digraph(vault_index)
+        payload = json.dumps(_serialize_adjacency_list(digraph, vault_registry), indent=2)
+    else:
+        edges = build_vault_edge_list(vault_index, vault_registry)
+        payload = json.dumps([[asdict(file) for file in edge] for edge in edges], indent=2)
+
     payload = collapse_vault_file_json(payload)
     emit_json_output(payload, output)
     console.print("Vault edge list complete")

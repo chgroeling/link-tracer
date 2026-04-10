@@ -2,59 +2,50 @@
 
 from __future__ import annotations
 
-from collections import deque
+from typing import TYPE_CHECKING
 
-from vault_net.models import LayerEntry, NoteGraph, VaultGraph, VaultLayered
+import networkx as nx
 
-__all__ = ["to_layered"]
+from vault_net.models import LayerEntry, VaultLayered
+from vault_net.vault_digraph import build_vault_digraph
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from vault_net.models import VaultFile, VaultIndex
+    from vault_net.vault_registry import VaultRegistry
+
+__all__ = ["build_vault_edge_list", "to_layered"]
 
 
-def to_layered(source_note: str, graph: VaultGraph | NoteGraph) -> VaultLayered:
-    """Transform a note graph into a flat BFS depth-layer list.
+def build_vault_edge_list(
+    vault_index: VaultIndex,
+    vault_registry: VaultRegistry,
+) -> list[list[VaultFile]]:
+    """Return a deduplicated resolved edge list as `VaultFile` pairs."""
+    digraph = build_vault_digraph(vault_index)
+    slug_edges = sorted(digraph.edges())
 
-    Each note in the graph is assigned to its shallowest reachable depth from
-    `source_note`. Both outgoing edges and backlinks are traversed, matching
-    the bidirectional structure produced by `build_note_graph`.
+    edges: list[list[VaultFile]] = []
+    for source_slug, target_slug in slug_edges:
+        source_file = vault_registry.get_file(source_slug)
+        target_file = vault_registry.get_file(target_slug)
+        if source_file is None or target_file is None:
+            continue
+        edges.append([source_file.to_file(), target_file.to_file()])
 
-    Args:
-        source_note: Vault-relative path of the origin note (depth 0).
-        graph: Scoped `VaultGraph` returned by `build_note_graph`.
+    return edges
 
-    Returns:
-        `VaultLayered` with a flat `layers` list ordered by traversal depth.
-    """
-    # Build reverse index: target_note → list of notes that link to it
-    reverse: dict[str, list[str]] = {}
-    for src, edges in graph.edges.items():
-        for edge in edges:
-            if edge.resolved and edge.target_note is not None:
-                reverse.setdefault(edge.target_note, []).append(src)
 
-    seen: set[str] = {source_note}
-    queue: deque[tuple[str, int]] = deque([(source_note, 0)])
-    entries: list[LayerEntry] = []
-
-    while queue:
-        note, depth = queue.popleft()
-        entries.append(LayerEntry(depth=depth, note=note))
-
-        # Forward neighbours: notes this note links to
-        for edge in graph.edges.get(note, []):
-            if edge.resolved and edge.target_note is not None:
-                neighbour = edge.target_note
-                if neighbour not in seen:
-                    seen.add(neighbour)
-                    queue.append((neighbour, depth + 1))
-
-        # Backward neighbours: notes that link to this note
-        for src in reverse.get(note, []):
-            if src not in seen:
-                seen.add(src)
-                queue.append((src, depth + 1))
+def to_layered(source_slug: str, graph: nx.DiGraph[str], vault_root: Path) -> VaultLayered:
+    """Transform an ego graph into a flat BFS depth-layer list."""
+    layers: list[LayerEntry] = []
+    for depth, nodes in enumerate(nx.bfs_layers(graph.to_undirected(), [source_slug])):
+        layers.extend(LayerEntry(depth=depth, note=str(node)) for node in nodes)
 
     return VaultLayered(
-        source_note=source_note,
-        vault_root=graph.vault_root,
-        metadata=graph.metadata,
-        layers=entries,
+        source_note=source_slug,
+        vault_root=str(vault_root),
+        total_files=graph.number_of_nodes(),
+        layers=layers,
     )

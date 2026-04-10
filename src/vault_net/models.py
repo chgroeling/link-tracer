@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    from obsilink import Link
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,52 +54,6 @@ class VaultFileStats:
 
 
 @dataclass(frozen=True, slots=True)
-class LinkEdge:
-    """Represents a directed edge from one note to a link target."""
-
-    link: VaultLink
-    resolved: bool
-    target_note: str | None = None
-    unresolved_reason: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class VaultGraphMetadata:
-    """Metadata summary for a vault graph result."""
-
-    total_files: int
-
-
-@dataclass(frozen=True, slots=True)
-class VaultGraph:
-    """Vault-wide link graph: edges between notes with summary metadata."""
-
-    vault_root: str
-    metadata: VaultGraphMetadata
-    edges: dict[str, list[LinkEdge]]
-
-
-@dataclass(frozen=True, slots=True)
-class NoteGraph:
-    """Result of a single-note BFS link resolution.
-
-    Returned by `build_note_graph`. Bundles the resolved source note path
-    with its scoped `VaultGraph`.
-
-    Attributes:
-        source_note: Vault-relative path of the origin note (or absolute path
-            if the note is outside the vault).
-        graph: Scoped vault graph containing only the notes reachable within
-            the requested BFS depth, including backlinks.
-    """
-
-    source_note: str
-    vault_root: str
-    metadata: VaultGraphMetadata
-    edges: dict[str, list[LinkEdge]]
-
-
-@dataclass(frozen=True, slots=True)
 class LayerEntry:
     """A single note assigned to a BFS traversal depth layer.
 
@@ -118,20 +70,19 @@ class LayerEntry:
 class VaultLayered:
     """Note graph reshaped into a flat BFS layer list.
 
-    Produced by `transforms.to_layered` from a [`VaultGraph`][] scoped to a
-    single source note. A note appears only once, at its shallowest reachable
-    depth.
+    Produced by `transforms.to_layered` from an ego graph around a source
+    slug. A note appears only once, at its shallowest reachable depth.
 
     Attributes:
         source_note: Vault-relative path of the origin note (depth 0).
         vault_root: Absolute path to the vault root directory.
-        metadata: Graph-level summary (file count).
+        total_files: Number of notes in the layered graph.
         layers: Flat list of depth-tagged note entries, ordered by depth.
     """
 
     source_note: str
     vault_root: str
-    metadata: VaultGraphMetadata
+    total_files: int
     layers: list[LayerEntry]
 
 
@@ -146,7 +97,7 @@ class VaultLink:
     blockid: str | None
 
     @classmethod
-    def from_obsilink_link(cls, link: Link) -> VaultLink:
+    def from_obsilink_link(cls, link: Any) -> VaultLink:
         """Build a VaultLink from obsilink Link fields."""
         return cls(
             link_type=link.type.value,

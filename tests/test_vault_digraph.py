@@ -1,49 +1,49 @@
-"""Unit tests for the vault_edge_list module."""
+"""Unit tests for digraph and edge-list builders."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from vault_net import build_vault_edge_list, build_vault_slug_edge_list, scan_vault
+from vault_net import (
+    build_vault_digraph,
+    scan_vault,
+)
+from vault_net.transforms import build_vault_edge_list
 from vault_net.vault_registry import VaultRegistry
 
 
-def test_build_vault_slug_edge_list_resolves_to_slug_pairs(tmp_path: Path) -> None:
-    """Return resolved edges as source/target slug pairs."""
+def test_build_vault_digraph_resolves_links_and_omits_missing(tmp_path: Path) -> None:
+    """Resolve links into digraph edges and ignore unresolved targets."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
     (vault_root / "home.md").write_text("[[about]]\n[[missing]]\n", encoding="utf-8")
     (vault_root / "about.md").write_text("", encoding="utf-8")
 
     vault_index = scan_vault(vault_root)
-    edge_list = build_vault_slug_edge_list(vault_index)
+    digraph = build_vault_digraph(vault_index)
+    home_slug = next(file.slug for file in vault_index.files if file.file_path == "home.md")
+    about_slug = next(file.slug for file in vault_index.files if file.file_path == "about.md")
 
-    assert edge_list == [["home.md", "about.md"]]
+    assert sorted(digraph.edges()) == [(home_slug, about_slug)]
 
 
-def test_build_vault_slug_edge_list_deduplicates_edges(tmp_path: Path) -> None:
-    """Collapse repeated links to a single edge pair."""
+def test_build_vault_digraph_contains_all_slugs(tmp_path: Path) -> None:
+    """Digraph includes isolated notes and resolved edges."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
-    (vault_root / "home.md").write_text("[[about]]\n[[about]]\n[[about.md]]\n", encoding="utf-8")
+    (vault_root / "home.md").write_text("[[about]]\n", encoding="utf-8")
     (vault_root / "about.md").write_text("", encoding="utf-8")
+    (vault_root / "isolated.md").write_text("", encoding="utf-8")
 
     vault_index = scan_vault(vault_root)
-    edge_list = build_vault_slug_edge_list(vault_index)
+    digraph = build_vault_digraph(vault_index)
 
-    assert edge_list == [["home.md", "about.md"]]
+    slugs = sorted(file.slug for file in vault_index.files)
+    home_slug = next(file.slug for file in vault_index.files if file.file_path == "home.md")
+    about_slug = next(file.slug for file in vault_index.files if file.file_path == "about.md")
 
-
-def test_build_vault_slug_edge_list_skips_self_loop(tmp_path: Path) -> None:
-    """Skip resolved self-loop edges from the output."""
-    vault_root = tmp_path / "vault"
-    vault_root.mkdir()
-    (vault_root / "home.md").write_text("[[home]]\n", encoding="utf-8")
-
-    vault_index = scan_vault(vault_root)
-    edge_list = build_vault_slug_edge_list(vault_index)
-
-    assert edge_list == []
+    assert sorted(digraph.nodes()) == slugs
+    assert sorted(digraph.edges()) == [(home_slug, about_slug)]
 
 
 def test_build_vault_edge_list_resolves_to_vault_file_pairs(tmp_path: Path) -> None:

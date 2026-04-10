@@ -18,9 +18,9 @@ project/
 │   ├── models.py                          # Frozen dataclasses: VaultIndex, VaultGraph, VaultLayered, LinkEdge, etc.
 │   ├── note_graph.py                      # build_note_graph(): BFS-scoped subgraph for a single note
 │   ├── scan.py                            # scan_vault(): matterify integration, VaultIndex builder
-│   ├── transforms.py                      # to_layered(): edge graph → BFS depth-layer list
+│   ├── transforms.py                      # to_layered() and build_vault_edge_list() output transforms
 │   ├── utils.py                           # Link extraction helpers (_extract_file_links, _normalize_lookup_key, _path_for_response)
-│   ├── vault_edge_list.py                 # build_vault_edge_list(): deduplicated rich edge list
+│   ├── vault_digraph.py                   # build_vault_digraph(): resolved slug digraph builder
 │   ├── vault_graph.py                     # build_vault_graph(): full vault link resolution
 │   └── vault_registry.py                  # VaultRegistry: slug/path bidirectional lookup
 ├── tests/                                  # Pytest suite
@@ -32,7 +32,7 @@ project/
 │   ├── test_note_graph.py                 # build_note_graph unit tests (depth, backlinks, circular)
 │   ├── test_scan.py                       # scan_vault delegation test
 │   ├── test_transforms.py                 # to_layered BFS transform tests
-│   ├── test_vault_edge_list.py            # build_vault_edge_list resolution tests
+│   ├── test_vault_digraph.py              # digraph and edge-list transform tests
 │   └── test_vault_graph.py                # build_vault_graph resolution tests
 └── docs/                                   # MkDocs source
 ```
@@ -154,8 +154,11 @@ The processing pipeline is: **scan → vault graph/edge list → note graph → 
 ### Vault Graph (`vault_graph.py`)
 `build_vault_graph()` builds lookup maps (`name_to_file`, `stem_to_file`, `relative_path_to_file`) from the vault index, then resolves all extracted links to `LinkEdge` objects. Link resolution tries: relative path → direct name → name + extension candidates → stem match. Returns a `VaultGraph` with edges keyed by source note paths.
 
-### Edge List (`vault_edge_list.py`)
-`build_vault_edge_list()` resolves links in the `VaultIndex` using a `VaultRegistry`. It returns a deduplicated list of lightweight `VaultFile` pairs. Unresolved links and self-loops are filtered out (self-loops trigger a warning).
+### Digraph (`vault_digraph.py`)
+`build_vault_digraph()` resolves note links into a directed slug graph with unresolved links omitted and self-loops filtered with a warning.
+
+### Edge List Transform (`transforms.py`)
+`build_vault_edge_list()` converts the resolved slug digraph to a deduplicated list of lightweight `VaultFile` pairs using a `VaultRegistry`.
 
 ### Vault Registry (`vault_registry.py`)
 `VaultRegistry` provides bidirectional lookup between slugs and `VaultNote` entries. It is instantiated from a `VaultIndex` and passed to functions that require note resolution, ensuring consistent slug-to-file mapping across the pipeline.

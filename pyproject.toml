@@ -28,6 +28,7 @@ classifiers = [
 dependencies = [
     "click>=8.3.2",
     "matterify>=0.5.0",
+    "networkx>=3.4.2",
     "obsilink>=0.3.1",
     "rich>=14.3.3",
     "structlog>=25.5.0",
@@ -60,6 +61,7 @@ dev = [
     "mypy>=1.11.0",
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
+    "types-networkx>=3.6.1.20260408",
 ]
 docs = [
     "mkdocs>=1.6.0",
@@ -141,4 +143,9 @@ addopts = [
     "--strict-config",
     "-ra",
     "--verbose",
+]
+
+[dependency-groups]
+dev = [
+    "types-networkx>=3.6.1.20260408",
 ]

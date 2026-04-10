@@ -1,18 +1,18 @@
-"""Build resolved edge lists from a vault index."""
+"""Build resolved digraph representations from a vault index."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import networkx as nx
 import structlog
 
 from vault_net.consts import _POSSIBLE_EXTENSIONS
 from vault_net.utils import _normalize_lookup_key
 
 if TYPE_CHECKING:
-    from vault_net.models import VaultFile, VaultIndex, VaultNote
-    from vault_net.vault_registry import VaultRegistry
+    from vault_net.models import VaultIndex, VaultNote
 
 logger = structlog.get_logger(__name__)
 
@@ -72,7 +72,7 @@ def _build_lookup_maps(
     return name_to_slug, stem_to_slug, relative_path_to_slug
 
 
-def build_vault_slug_edge_list(vault_index: VaultIndex) -> list[list[str]]:
+def _build_vault_slug_edge_list(vault_index: VaultIndex) -> list[tuple[str, str]]:
     """Return a deduplicated resolved edge list as slug pairs.
 
     The result format is compatible with `networkx.from_edgelist`.
@@ -96,29 +96,19 @@ def build_vault_slug_edge_list(vault_index: VaultIndex) -> list[list[str]]:
                 continue
             if target_slug == source_slug:
                 logger.warning(
-                    "build_vault_slug_edge_list.self_loop_skipped",
+                    "_build_vault_slug_edge_list.self_loop_skipped",
                     source_slug=source_slug,
                     target_slug=target_slug,
                 )
                 continue
             edges.add((source_slug, target_slug))
 
-    return [[source, target] for source, target in sorted(edges)]
+    return sorted(edges)
 
 
-def build_vault_edge_list(
-    vault_index: VaultIndex,
-    vault_registry: VaultRegistry,
-) -> list[list[VaultFile]]:
-    """Return a deduplicated resolved edge list as `VaultFile` pairs."""
-    slug_edges = build_vault_slug_edge_list(vault_index)
-
-    edges: list[list[VaultFile]] = []
-    for source_slug, target_slug in slug_edges:
-        source_file = vault_registry.get_file(source_slug)
-        target_file = vault_registry.get_file(target_slug)
-        if source_file is None or target_file is None:
-            continue
-        edges.append([source_file.to_file(), target_file.to_file()])
-
-    return edges
+def build_vault_digraph(vault_index: VaultIndex) -> nx.DiGraph[str]:
+    """Build a directed graph whose nodes are note slugs."""
+    graph: nx.DiGraph[str] = nx.DiGraph()
+    graph.add_edges_from(_build_vault_slug_edge_list(vault_index))
+    graph.add_nodes_from(file.slug for file in vault_index.files)
+    return graph
