@@ -159,32 +159,46 @@ class VaultLink:
 
 @dataclass(frozen=True, slots=True)
 class VaultFile:
-    """Represents a scanned file in the vault.
-
-    Mirrors matterify.models.FileEntry but uses local types and
-    renames custom_data to links.
+    """Represent lightweight file identity.
 
     Attributes:
+        slug: Unique short identifier for the file.
         file_path: Path to the file relative to the vault root.
-        frontmatter: Extracted YAML frontmatter as a dictionary.
-        status: Scan status string (e.g., "ok").
-        error: Error message if status is not "ok", otherwise None.
-        stats: File statistics object.
-        file_hash: Hash of the file contents.
-        links: Optional list of extracted links from the file content.
-        Renamed from custom_data in matterify.
-        slug: Unique short identifier for the file (first SLUG_LENGTH chars of filename,
-        with numeric suffix if needed for uniqueness).
     """
 
     slug: str
     file_path: str
-    frontmatter: dict | None
+
+
+@dataclass(frozen=True, slots=True)
+class VaultNote(VaultFile):
+    """Represent a scanned note with metadata and extracted links.
+
+    Mirrors matterify.models.FileEntry but uses local types and renames
+    custom_data to links.
+
+    Attributes:
+        status: Scan status string (e.g., "ok").
+        error: Error message if status is not "ok", otherwise None.
+        file_hash: Hash of the file contents.
+        frontmatter: Extracted YAML frontmatter as a dictionary.
+        stats: File statistics object.
+        links: Extracted file links from note content.
+    """
+
     status: str
     error: str | None
-    stats: VaultFileStats
     file_hash: str
+    frontmatter: dict[str, object] | None
+    stats: VaultFileStats
     links: list[VaultLink]
+
+    def to_file(self) -> VaultFile:
+        """Return this note as a lightweight `VaultFile`."""
+        return VaultFile(
+            slug=self.slug,
+            file_path=self.file_path,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -199,7 +213,7 @@ class VaultIndex:
 
     vault_root: Path
     metadata: VaultIndexMetadata
-    files: list[VaultFile]
+    files: list[VaultNote]
 
     @property
     def source_directory(self) -> str:

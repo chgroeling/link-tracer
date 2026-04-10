@@ -12,7 +12,7 @@ from matterify.constants import BLACKLIST
 from obsilink import extract_links
 
 from vault_net.consts import SLUG_LENGTH
-from vault_net.models import VaultFile, VaultFileStats, VaultIndex, VaultIndexMetadata, VaultLink
+from vault_net.models import VaultFileStats, VaultIndex, VaultIndexMetadata, VaultLink, VaultNote
 
 logger = structlog.get_logger(__name__)
 
@@ -58,7 +58,7 @@ def _convert_scan_to_index(
 
     This internal function transforms matterify's ScanResults into
     our local VaultIndex type, converting FileEntry objects to
-    VaultFile and ScanMetadata to VaultIndexMetadata.
+    VaultNote and ScanMetadata to VaultIndexMetadata.
 
     Args:
         vault_root: Root directory of the vault.
@@ -83,8 +83,8 @@ def _convert_scan_to_index(
         throughput_files_per_second=meta.throughput_files_per_second,
     )
 
-    # Convert matterify FileEntry list to VaultFile list
-    files: list[VaultFile] = []
+    # Convert matterify FileEntry list to VaultNote list
+    files: list[VaultNote] = []
     slug_counts: dict[str, int] = {}
     for entry in scan_result.files:
         # Access custom_data from matterify — already list[Link] from the callback
@@ -98,7 +98,7 @@ def _convert_scan_to_index(
         filename = Path(entry.file_path).name
         slug = _generate_slug(filename, slug_counts)
 
-        vault_file = VaultFile(
+        vault_file = VaultNote(
             file_path=entry.file_path,
             frontmatter=entry.frontmatter,
             status=entry.status,

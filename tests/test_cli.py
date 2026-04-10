@@ -429,8 +429,8 @@ def test_vault_command_requires_vault_root() -> None:
     assert "No vault root directory provided" in result.output
 
 
-def test_edges_command_outputs_slug_pairs(tmp_path: Path) -> None:
-    """edges subcommand outputs deduplicated resolved slug pairs."""
+def test_edges_command_outputs_lightweight_file_pairs(tmp_path: Path) -> None:
+    """edges subcommand outputs deduplicated lightweight `VaultFile` pairs."""
     vault = tmp_path / "vault"
     vault.mkdir()
     (vault / "home.md").write_text("[[about]]\n[[about]]\n[[missing]]\n", encoding="utf-8")
@@ -441,7 +441,29 @@ def test_edges_command_outputs_slug_pairs(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert payload == [["home.md", "about.md"]]
+    assert len(payload) == 1
+    assert payload[0][0]["file_path"] == "home.md"
+    assert payload[0][0]["slug"] == "home.md"
+    assert "links" not in payload[0][0]
+    assert "frontmatter" not in payload[0][0]
+    assert "stats" not in payload[0][0]
+    assert payload[0][1]["file_path"] == "about.md"
+    assert payload[0][1]["slug"] == "about.md"
+
+
+def test_edges_command_compacts_vault_file_objects_to_single_line(tmp_path: Path) -> None:
+    """edges output keeps each lightweight VaultFile object on one line."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "home.md").write_text("[[about]]\n", encoding="utf-8")
+    (vault / "about.md").write_text("", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["edges", "--vault-root", str(vault)])
+
+    assert result.exit_code == 0
+    assert '{"slug": "home.md", "file_path": "home.md"}' in result.output
+    assert '{"slug": "about.md", "file_path": "about.md"}' in result.output
 
 
 def test_edges_command_skips_self_loop(tmp_path: Path) -> None:

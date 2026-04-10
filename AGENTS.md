@@ -20,8 +20,9 @@ project/
 │   ├── scan.py                            # scan_vault(): matterify integration, VaultIndex builder
 │   ├── transforms.py                      # to_layered(): edge graph → BFS depth-layer list
 │   ├── utils.py                           # Link extraction helpers (_extract_file_links, _normalize_lookup_key, _path_for_response)
-│   ├── vault_edge_list.py                 # build_vault_edge_list(): deduplicated slug-based edge list
-│   └── vault_graph.py                     # build_vault_graph(): full vault link resolution
+│   ├── vault_edge_list.py                 # build_vault_edge_list(): deduplicated rich edge list
+│   ├── vault_graph.py                     # build_vault_graph(): full vault link resolution
+│   └── vault_registry.py                  # VaultRegistry: slug/path bidirectional lookup
 ├── tests/                                  # Pytest suite
 │   ├── __init__.py
 │   ├── conftest.py                        # Autouse fixtures: env isolation, structlog suppression
@@ -144,7 +145,7 @@ Extracts Obsidian-style wikilinks, Markdown links, and plain URLs from text. Use
 - `-e/--exclude-dir` (repeatable): Additional directory names to exclude
 - `--no-default-excludes`: Disable built-in default exclusions
 - `--debug`, `--verbose`: Same as `note-graph`
-- **Output**: JSON flat list of slug pairs (e.g. `[["slug1", "slug2"], ...]`). Compatible with NetworkX `from_edgelist`.
+- **Output**: JSON flat list of `VaultFile` pairs (e.g. `[[{...}, {...}], ...]`). entries are lightweight (identity only).
 - **Filtering**: Unresolved links are omitted; duplicate edges are merged; self-loops are skipped with a warning.
 
 **Vault root resolution:** CLI `--vault-root` > `VAULT_ROOT` env var. Raises `UsageError` if neither is set or path doesn't exist.
@@ -173,20 +174,23 @@ Extracts Obsidian-style wikilinks, Markdown links, and plain URLs from text. Use
 
 ### Pipeline Overview
 The processing pipeline is: **scan → vault graph/edge list → note graph → transform → output**.
-1. `scan_vault()` scans the vault directory via matterify with a callback that pre-extracts file links per note, returning a `VaultIndex`.
+1. `scan_vault()` scans the vault directory via matterify with a callback that pre-extracts file links per note, returning a `VaultIndex` containing `VaultNote` entries.
 2. `build_vault_graph()` or `build_vault_edge_list()` resolves extracted links across the entire vault.
 3. `build_note_graph()` (optional) scopes the vault graph to a BFS neighborhood around a single note.
 4. `to_layered()` (optional) reshapes the edge graph into a flat BFS depth-layer list.
 5. CLI serializes the result as JSON.
 
 ### Scanning (`scan.py`)
-`scan_vault()` calls `matterify.scan_directory()` with `compute_hash=True`, `compute_stats=True`, `compute_frontmatter=True`, and a `callback` that extracts file links via `obsilink`. The `ScanResults` are converted to a `VaultIndex` with `VaultFile` entries (each carrying pre-extracted `VaultLink` lists). Supports configurable directory exclusions via `extra_exclude_dir` and `no_default_excludes`.
+`scan_vault()` calls `matterify.scan_directory()` with `compute_hash=True`, `compute_stats=True`, `compute_frontmatter=True`, and a `callback` that extracts file links via `obsilink`. The `ScanResults` are converted to a `VaultIndex` with `VaultNote` entries (each carrying pre-extracted `VaultLink` lists). Supports configurable directory exclusions via `extra_exclude_dir` and `no_default_excludes`.
 
 ### Vault Graph (`vault_graph.py`)
 `build_vault_graph()` builds lookup maps (`name_to_file`, `stem_to_file`, `relative_path_to_file`) from the vault index, then resolves all extracted links to `LinkEdge` objects. Link resolution tries: relative path → direct name → name + extension candidates → stem match. Returns a `VaultGraph` with edges keyed by source note paths.
 
 ### Edge List (`vault_edge_list.py`)
-`build_vault_edge_list()` resolves links in the `VaultIndex` to target slugs. It uses the same precedence as `build_vault_graph` but returns a deduplicated list of slug pairs. Unresolved links and self-loops are filtered out (self-loops trigger a warning).
+`build_vault_edge_list()` resolves links in the `VaultIndex` using a `VaultRegistry`. It returns a deduplicated list of lightweight `VaultFile` pairs. Unresolved links and self-loops are filtered out (self-loops trigger a warning).
+
+### Vault Registry (`vault_registry.py`)
+`VaultRegistry` provides bidirectional lookup between slugs and `VaultNote` entries. It is instantiated from a `VaultIndex` and passed to functions that require note resolution, ensuring consistent slug-to-file mapping across the pipeline.
 
 ### Note Graph (`note_graph.py`)
 `build_note_graph()` performs BFS from a source note through the vault graph, collecting forward edges and backlinks up to the specified depth. `depth=0` returns only the source; `depth=1` returns direct links and backlinks; higher depths traverse recursively. Circular links are handled safely via visited-set tracking.
@@ -199,8 +203,9 @@ The processing pipeline is: **scan → vault graph/edge list → note graph → 
 
 ### Models (`models.py`)
 All models are frozen dataclasses with `slots=True`:
-- `VaultIndex` — Scanned vault: `vault_root`, `metadata` (VaultIndexMetadata), `files` (list[VaultFile])
-- `VaultFile` — Per-file entry: path, frontmatter, stats, hash, pre-extracted links
+- `VaultIndex` — Scanned vault: `vault_root`, `metadata` (VaultIndexMetadata), `files` (list[VaultNote])
+- `VaultFile` — Identity only: `slug`, `file_path`
+- `VaultNote` — Rich entry: `VaultFile` + `status`, `error`, `file_hash`, `frontmatter`, `stats`, `links`
 - `VaultLink` — Serialized link: type, target, alias, heading, blockid
 - `VaultGraph` — Edge dict: `edges[source_note]` → list[LinkEdge]
 - `LinkEdge` — Directed edge: link, resolved flag, target_note, unresolved_reason

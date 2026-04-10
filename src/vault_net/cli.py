@@ -10,9 +10,16 @@ from pathlib import Path
 import click
 import structlog
 
-from vault_net import build_note_graph, build_vault_edge_list, build_vault_graph, scan_vault
+from vault_net import (
+    VaultRegistry,
+    build_note_graph,
+    build_vault_edge_list,
+    build_vault_graph,
+    scan_vault,
+)
 from vault_net.logging import configure_debug_logging, get_console
 from vault_net.transforms import to_layered
+from vault_net.utils import collapse_vault_file_json
 
 logger = structlog.get_logger(__name__)
 
@@ -136,6 +143,7 @@ def note_graph(
         payload = json.dumps(asdict(to_layered(note_graph.source_note, note_graph)), indent=2)
     else:
         payload = json.dumps(asdict(note_graph), indent=2)
+    payload = collapse_vault_file_json(payload)
     emit_json_output(payload, output)
     console.print("Link tracing complete")
     logger.info("Link tracing complete")
@@ -190,6 +198,7 @@ def index_cmd(
         vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
     )
     payload = json.dumps(asdict(vault_index), indent=2, default=str)
+    payload = collapse_vault_file_json(payload)
     emit_json_output(payload, output)
     console.print("Vault index scan complete")
     logger.info("Vault index scan complete")
@@ -245,6 +254,7 @@ def vault_graph(
     )
     vault_graph = build_vault_graph(vault_index=vault_index)
     payload = json.dumps(asdict(vault_graph), indent=2)
+    payload = collapse_vault_file_json(payload)
     emit_json_output(payload, output)
     console.print("Vault link tracing complete")
     logger.info("Vault link tracing complete")
@@ -288,7 +298,7 @@ def edge_list(
     extra_exclude_dir: tuple[str, ...],
     no_default_excludes: bool,
 ) -> int:
-    """Output a resolved slug edge list for the whole vault."""
+    """Output a resolved edge list with lightweight `VaultFile` entries."""
     configure_debug_logging(debug)
     console = get_console(verbose)
 
@@ -298,8 +308,10 @@ def edge_list(
     vault_index = scan_vault(
         vault_root, extra_exclude_dir=extra_exclude_dir, no_default_excludes=no_default_excludes
     )
-    edges = build_vault_edge_list(vault_index)
-    payload = json.dumps(edges, indent=2)
+    vault_registry = VaultRegistry(vault_index)
+    edges = build_vault_edge_list(vault_index, vault_registry)
+    payload = json.dumps([[asdict(file) for file in edge] for edge in edges], indent=2)
+    payload = collapse_vault_file_json(payload)
     emit_json_output(payload, output)
     console.print("Vault edge list complete")
     logger.info("Vault edge list complete")
