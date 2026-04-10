@@ -27,30 +27,26 @@ infrastructure -> domain
 ## Source Layout
 
 ```text
-src/vault_net/
-├── __init__.py                           # Public package surface
-├── __main__.py                           # python -m vault_net entrypoint
-├── consts.py                             # Shared constants
-├── logging.py                            # Logging helpers for CLI interface
-├── application/
-│   ├── api.py                            # Facade wiring default adapters
-│   └── use_cases/
-│       ├── scan_vault.py                 # ScanVaultUseCase
-│       ├── build_vault_digraph.py        # BuildVaultDigraphUseCase
-│       └── build_note_ego_graph.py       # BuildNoteEgoGraphUseCase
-├── domain/
-│   ├── models.py                         # Core dataclasses
-│   ├── protocols.py                      # Ports (VaultScanner, GraphBuilder)
-│   └── services/
-│       ├── registry.py                   # VaultRegistry lookup service
-│       └── slug.py                       # Slug generation rules
-├── infrastructure/
-│   ├── scanner/matterify_scanner.py      # matterify + obsilink adapter
-│   └── graph/networkx_graph_builder.py   # networkx graph adapter
-├── interface/
-│   ├── cli/main.py                       # Click commands and composition root
-│   └── formatters/views.py               # edge/adjacency/layered payload formatting
-└── ...
+.
+├── AGENTS.md
+├── README.md
+├── src/
+│   └── vault_net/
+│       ├── application/
+│       │   └── use_cases/
+│       ├── domain/
+│       │   └── services/
+│       ├── infrastructure/
+│       │   ├── graph/
+│       │   └── scanner/
+│       └── interface/
+│           ├── cli/
+│           └── formatters/
+└── tests/
+    ├── domain/
+    ├── infrastructure/
+    ├── integration/
+    └── interface/
 ```
 
 ## Layer Responsibilities
@@ -99,13 +95,14 @@ src/vault_net/
 
 ```text
 tests/
-├── domain/services/                      # Domain service unit tests
-├── infrastructure/graph/                # Graph adapter tests
-├── infrastructure/scanner/              # Scanner adapter tests
-├── interface/                           # CLI and formatter tests
-├── integration/obsilink/                # External parser integration tests
-├── fixtures.py                          # Shared fixtures and fake adapter payloads
-└── conftest.py                          # Global pytest fixtures
+├── domain/
+│   └── services/
+├── infrastructure/
+│   ├── graph/
+│   └── scanner/
+├── integration/
+│   └── obsilink/
+└── interface/
 ```
 
 ## Rules
