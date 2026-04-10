@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 
 import structlog
 
-from vault_net.domain.models import NoteLinkTrace
+from vault_net.domain.models import InputError, NoteLinkTrace
+from vault_net.domain.services.resolve_note_input import resolve_note_input
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -27,17 +28,17 @@ class TraceNoteLinksUseCase:
     def execute(
         self,
         vault_root: Path,
-        source_slug: str,
+        note_input: str,
         *,
         depth: int = 1,
         extra_exclude_dir: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> NoteLinkTrace:
-        """Scan vault, build graph, and extract neighborhood around source slug."""
+        """Scan vault, build graph, and extract neighborhood around note input."""
         start = time.monotonic()
         logger.info(
             "use_case.trace_note_links.start",
-            source_slug=source_slug,
+            note_input=note_input,
             vault_root=str(vault_root),
             depth=depth,
         )
@@ -52,7 +53,16 @@ class TraceNoteLinksUseCase:
         logger.debug("use_case.trace_note_links.step.building_full_graph")
         full_graph = self._graph_builder.build_full_graph(vault_index)
 
-        logger.debug("use_case.trace_note_links.step.extracting_neighborhood")
+        logger.debug("use_case.trace_note_links.step.resolving_note_input")
+        try:
+            source_slug = resolve_note_input(note_input, vault_root, vault_index)
+        except InputError as exc:
+            raise InputError(f"Invalid note input '{note_input}': {exc}") from exc
+
+        logger.debug(
+            "use_case.trace_note_links.step.extracting_neighborhood",
+            resolved_slug=source_slug,
+        )
         neighborhood_graph = self._graph_builder.build_neighborhood_graph(
             source_slug, full_graph, depth=depth
         )

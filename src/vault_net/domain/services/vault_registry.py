@@ -24,3 +24,7 @@ class VaultRegistry:
     def get_slug(self, file: VaultFile) -> str | None:
         """Return the slug for a file identity, if present."""
         return self._file_path_to_slug.get(file.file_path)
+
+    def get_slug_by_path(self, file_path: str) -> str | None:
+        """Return the slug for a file path, if present."""
+        return self._file_path_to_slug.get(file_path)

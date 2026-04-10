@@ -106,3 +106,7 @@ class NoteLinkTrace:
     source_slug: str
     vault_index: VaultIndex
     neighborhood_graph: VaultGraph
+
+
+class InputError(Exception):
+    """Raised when a note input (file path or slug) cannot be resolved."""

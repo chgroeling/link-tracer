@@ -20,6 +20,7 @@ from vault_net.application import (
     scan_vault,
     trace_note_links,
 )
+from vault_net.domain.models import InputError
 from vault_net.domain.services.vault_registry import VaultRegistry
 from vault_net.interface.formatters.views import (
     build_adjacency_list,
@@ -236,7 +237,7 @@ def _serialize_layered_repr(
 
 
 @main.command("note-graph")
-@click.argument("slug", type=str)
+@click.argument("note_input", type=str)
 @click.option(
     "--vault-root",
     type=click.Path(path_type=Path),
@@ -293,7 +294,7 @@ def _serialize_layered_repr(
     help="Show only filenames without path or extension in pretty output",
 )
 def note_graph(
-    slug: str,
+    note_input: str,
     vault_root: Path | None,
     depth: int,
     output: Path | None,
@@ -305,29 +306,34 @@ def note_graph(
     no_default_excludes: bool,
     basename: bool,
 ) -> int:
-    """Trace links for a single note."""
+    """Trace links for a single note (specify by slug or file path)."""
     configure_debug_logging(debug)
     console = get_console(verbose)
 
     logger.debug(
-        "starting.link_tracer", slug=slug, vault_root=str(vault_root) if vault_root else None
+        "starting.link_tracer",
+        note_input=note_input,
+        vault_root=str(vault_root) if vault_root else None,
     )
     vault_root = resolve_vault_root(vault_root)
-    logger.info("tracing.links", slug=slug)
+    logger.info("tracing.links", note_input=note_input)
 
     try:
         trace_result = trace_note_links(
             vault_root,
-            slug,
+            note_input,
             depth=depth,
             extra_exclude_dir=extra_exclude_dir,
             no_default_excludes=no_default_excludes,
         )
+    except InputError as exc:
+        raise click.UsageError(str(exc)) from exc
     except KeyError as exc:
-        raise click.UsageError(f"Unknown slug '{slug}'.") from exc
+        raise click.UsageError(f"Unknown slug '{note_input}'.") from exc
 
     vault_registry = VaultRegistry(trace_result.vault_index)
     neighborhood_graph = trace_result.neighborhood_graph
+    slug = trace_result.source_slug
 
     payload_obj: object
     if style == "layered":

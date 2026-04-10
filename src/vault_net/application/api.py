@@ -50,7 +50,7 @@ def get_neighborhood_graph(
 
 def trace_note_links(
     vault_root: Path,
-    source_slug: str,
+    note_input: str,
     *,
     depth: int = 1,
     extra_exclude_dir: tuple[str, ...] = (),
@@ -63,7 +63,7 @@ def trace_note_links(
     )
     return use_case.execute(
         vault_root,
-        source_slug,
+        note_input,
         depth=depth,
         extra_exclude_dir=extra_exclude_dir,
         no_default_excludes=no_default_excludes,
