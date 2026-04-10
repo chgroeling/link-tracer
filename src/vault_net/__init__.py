@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
 
-from vault_net.application.api import build_note_ego_graph, build_vault_digraph, scan_vault
+from vault_net.application.api import get_full_graph, get_neighborhood_graph, scan_vault
 from vault_net.domain.models import VaultGraph, VaultGraphMetadata, VaultIndex
-from vault_net.domain.services.registry import VaultRegistry
+from vault_net.domain.services.vault_registry import VaultRegistry
 from vault_net.interface.formatters.views import build_vault_edge_list
 
 try:
@@ -21,8 +21,8 @@ __all__ = [
     "VaultGraphMetadata",
     "VaultRegistry",
     "__version__",
-    "build_note_ego_graph",
-    "build_vault_digraph",
+    "get_neighborhood_graph",
+    "get_full_graph",
     "build_vault_edge_list",
     "scan_vault",
 ]

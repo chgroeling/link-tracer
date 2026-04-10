@@ -9,7 +9,7 @@ from typing import Any, cast
 import networkx as nx
 
 from vault_net.domain.models import VaultFile, VaultGraph, VaultGraphMetadata
-from vault_net.domain.services.registry import VaultRegistry
+from vault_net.domain.services.vault_registry import VaultRegistry
 from vault_net.infrastructure.scanner.matterify_scanner import MatterifyVaultScanner
 from vault_net.interface.formatters.views import build_layered_repr, build_vault_edge_list
 

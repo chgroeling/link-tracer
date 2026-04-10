@@ -18,7 +18,7 @@ from vault_net.domain.models import (
     VaultLink,
     VaultNote,
 )
-from vault_net.domain.services.slug import generate_slug
+from vault_net.domain.services.slug_service import generate_slug
 
 if TYPE_CHECKING:
     from matterify.models import FileStats, ScanResults

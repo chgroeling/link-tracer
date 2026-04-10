@@ -11,7 +11,7 @@ from vault_net.domain.models import (
     VaultNote,
 )
 from vault_net.domain.protocols import GraphBuilder, VaultScanner
-from vault_net.domain.services.registry import VaultRegistry
+from vault_net.domain.services.vault_registry import VaultRegistry
 
 __all__ = [
     "GraphBuilder",

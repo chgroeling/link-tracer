@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING, Protocol
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import networkx as nx
-
     from vault_net.domain.models import VaultGraph, VaultIndex
 
 
@@ -28,14 +26,14 @@ class VaultScanner(Protocol):
 class GraphBuilder(Protocol):
     """Port for graph construction and traversal."""
 
-    def build_vault_digraph(self, vault_index: VaultIndex) -> VaultGraph:
-        """Build a resolved directed graph from a vault index."""
+    def build_full_graph(self, vault_index: VaultIndex) -> VaultGraph:
+        """Build a resolved graph from a vault index."""
 
-    def build_note_ego_graph(
+    def build_neighborhood_graph(
         self,
         source_slug: str,
-        vault_digraph: nx.DiGraph[str],
+        graph: VaultGraph,
         *,
         depth: int = 1,
-    ) -> nx.DiGraph[str]:
-        """Build an ego graph around a source slug."""
+    ) -> VaultGraph:
+        """Build a neighborhood graph around a source slug."""

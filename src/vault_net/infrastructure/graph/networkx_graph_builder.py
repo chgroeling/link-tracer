@@ -105,7 +105,7 @@ def _build_vault_slug_edge_list(vault_index: VaultIndex) -> list[tuple[str, str]
 class NetworkXGraphBuilder:
     """GraphBuilder implementation backed by NetworkX."""
 
-    def build_vault_digraph(self, vault_index: VaultIndex) -> VaultGraph:
+    def build_full_graph(self, vault_index: VaultIndex) -> VaultGraph:
         graph: nx.DiGraph[str] = nx.DiGraph()
         slug_edges = _build_vault_slug_edge_list(vault_index)
         graph.add_edges_from(slug_edges)
@@ -117,17 +117,22 @@ class NetworkXGraphBuilder:
             digraph=graph,
         )
 
-    def build_note_ego_graph(
+    def build_neighborhood_graph(
         self,
         source_slug: str,
-        vault_digraph: nx.DiGraph[str],
+        graph: VaultGraph,
         *,
         depth: int = 1,
-    ) -> nx.DiGraph[str]:
+    ) -> VaultGraph:
         if depth < 0:
             raise ValueError(f"depth must be >= 0, got {depth}")
-        if source_slug not in vault_digraph:
+        if source_slug not in graph.digraph:
             raise KeyError(source_slug)
 
-        ego = nx.ego_graph(vault_digraph, source_slug, radius=depth, undirected=True)
-        return nx.DiGraph(ego)
+        ego = nx.ego_graph(graph.digraph, source_slug, radius=depth, undirected=True)
+        neighborhood = nx.DiGraph(ego)
+        return VaultGraph(
+            vault_root=graph.vault_root,
+            metadata=VaultGraphMetadata(edge_count=neighborhood.number_of_edges()),
+            digraph=neighborhood,
+        )

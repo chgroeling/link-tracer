@@ -149,7 +149,7 @@ module = "vault_net.application.api"
 disallow_any_unimported = false
 
 [[tool.mypy.overrides]]
-module = "vault_net.application.use_cases.build_note_ego_graph"
+module = "vault_net.application.use_cases.build_neighborhood_graph"
 disallow_any_unimported = false
 
 [[tool.mypy.overrides]]

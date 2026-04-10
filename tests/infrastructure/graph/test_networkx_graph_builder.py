@@ -29,7 +29,7 @@ def _slug_for(vault_index: VaultIndex, file_path: str) -> str:
     return next(file.slug for file in vault_index.files if file.file_path == file_path)
 
 
-def test_build_vault_digraph_resolves_known_links_only(tmp_path: Path) -> None:
+def test_build_full_graph_resolves_known_links_only(tmp_path: Path) -> None:
     """Resolved links are included and unresolved targets are omitted."""
     vault_root = _create_vault(
         tmp_path,
@@ -42,7 +42,7 @@ def test_build_vault_digraph_resolves_known_links_only(tmp_path: Path) -> None:
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
     vault_index = scanner.scan(vault_root)
-    vault_graph = graph_builder.build_vault_digraph(vault_index)
+    vault_graph = graph_builder.build_full_graph(vault_index)
     home_slug = _slug_for(vault_index, "home.md")
     about_slug = _slug_for(vault_index, "about.md")
 
@@ -51,7 +51,7 @@ def test_build_vault_digraph_resolves_known_links_only(tmp_path: Path) -> None:
     assert vault_graph.metadata.edge_count == 1
 
 
-def test_build_vault_digraph_includes_isolated_notes(tmp_path: Path) -> None:
+def test_build_full_graph_includes_isolated_notes(tmp_path: Path) -> None:
     """Digraph includes all scanned notes, including isolated ones."""
     vault_root = _create_vault(
         tmp_path,
@@ -65,7 +65,7 @@ def test_build_vault_digraph_includes_isolated_notes(tmp_path: Path) -> None:
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
     vault_index = scanner.scan(vault_root)
-    vault_graph = graph_builder.build_vault_digraph(vault_index)
+    vault_graph = graph_builder.build_full_graph(vault_index)
     home_slug = _slug_for(vault_index, "home.md")
     about_slug = _slug_for(vault_index, "about.md")
 
@@ -73,7 +73,7 @@ def test_build_vault_digraph_includes_isolated_notes(tmp_path: Path) -> None:
     assert sorted(vault_graph.digraph.edges()) == [(home_slug, about_slug)]
 
 
-def test_build_vault_digraph_skips_self_loops_and_deduplicates_edges(tmp_path: Path) -> None:
+def test_build_full_graph_skips_self_loops_and_deduplicates_edges(tmp_path: Path) -> None:
     """Self-links are filtered and repeated links collapse into one edge."""
     vault_root = _create_vault(
         tmp_path,
@@ -86,7 +86,7 @@ def test_build_vault_digraph_skips_self_loops_and_deduplicates_edges(tmp_path: P
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
     vault_index = scanner.scan(vault_root)
-    vault_graph = graph_builder.build_vault_digraph(vault_index)
+    vault_graph = graph_builder.build_full_graph(vault_index)
     home_slug = _slug_for(vault_index, "home.md")
     about_slug = _slug_for(vault_index, "about.md")
 
@@ -94,7 +94,7 @@ def test_build_vault_digraph_skips_self_loops_and_deduplicates_edges(tmp_path: P
     assert vault_graph.metadata.edge_count == 1
 
 
-def test_build_note_ego_graph_rejects_negative_depth(tmp_path: Path) -> None:
+def test_build_neighborhood_graph_rejects_negative_depth(tmp_path: Path) -> None:
     """Negative depth raises ValueError."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -102,12 +102,12 @@ def test_build_note_ego_graph_rejects_negative_depth(tmp_path: Path) -> None:
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    graph = graph_builder.build_vault_digraph(scanner.scan(vault_root)).digraph
+    graph = graph_builder.build_full_graph(scanner.scan(vault_root))
     with pytest.raises(ValueError, match="depth must be >= 0"):
-        graph_builder.build_note_ego_graph("a.md", graph, depth=-1)
+        graph_builder.build_neighborhood_graph("a.md", graph, depth=-1)
 
 
-def test_build_note_ego_graph_requires_known_slug(tmp_path: Path) -> None:
+def test_build_neighborhood_graph_requires_known_slug(tmp_path: Path) -> None:
     """Unknown slug raises KeyError."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -115,12 +115,12 @@ def test_build_note_ego_graph_requires_known_slug(tmp_path: Path) -> None:
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    graph = graph_builder.build_vault_digraph(scanner.scan(vault_root)).digraph
+    graph = graph_builder.build_full_graph(scanner.scan(vault_root))
     with pytest.raises(KeyError):
-        graph_builder.build_note_ego_graph("missing.md", graph, depth=1)
+        graph_builder.build_neighborhood_graph("missing.md", graph, depth=1)
 
 
-def test_build_note_ego_graph_depth_zero_returns_source_only(tmp_path: Path) -> None:
+def test_build_neighborhood_graph_depth_zero_returns_source_only(tmp_path: Path) -> None:
     """Depth zero keeps only the source node and no edges."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -129,14 +129,14 @@ def test_build_note_ego_graph_depth_zero_returns_source_only(tmp_path: Path) -> 
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    graph = graph_builder.build_vault_digraph(scanner.scan(vault_root)).digraph
-    ego = graph_builder.build_note_ego_graph("a.md", graph, depth=0)
+    graph = graph_builder.build_full_graph(scanner.scan(vault_root))
+    ego = graph_builder.build_neighborhood_graph("a.md", graph, depth=0).digraph
 
     assert sorted(ego.nodes()) == ["a.md"]
     assert list(ego.edges()) == []
 
 
-def test_build_note_ego_graph_uses_undirected_neighborhood(tmp_path: Path) -> None:
+def test_build_neighborhood_graph_uses_undirected_neighborhood(tmp_path: Path) -> None:
     """Depth one includes outgoing links and backlinks."""
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
@@ -146,8 +146,8 @@ def test_build_note_ego_graph_uses_undirected_neighborhood(tmp_path: Path) -> No
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    graph = graph_builder.build_vault_digraph(scanner.scan(vault_root)).digraph
-    ego = graph_builder.build_note_ego_graph("a.md", graph, depth=1)
+    graph = graph_builder.build_full_graph(scanner.scan(vault_root))
+    ego = graph_builder.build_neighborhood_graph("a.md", graph, depth=1).digraph
 
     assert sorted(ego.nodes()) == ["a.md", "b.md", "c.md"]
     assert sorted(ego.edges()) == [("a.md", "b.md"), ("c.md", "a.md")]

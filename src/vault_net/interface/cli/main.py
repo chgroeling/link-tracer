@@ -7,6 +7,7 @@ import os
 from dataclasses import asdict
 from io import StringIO
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 import structlog
@@ -14,15 +15,17 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from vault_net.application import build_note_ego_graph, build_vault_digraph, scan_vault
-from vault_net.domain.models import VaultGraph, VaultGraphMetadata
-from vault_net.domain.services.registry import VaultRegistry
+from vault_net.application import get_full_graph, get_neighborhood_graph, scan_vault
+from vault_net.domain.services.vault_registry import VaultRegistry
 from vault_net.interface.formatters.views import (
     build_adjacency_list,
     build_layered_repr,
     build_vault_edge_list,
 )
 from vault_net.logging import configure_debug_logging, get_console
+
+if TYPE_CHECKING:
+    from vault_net.domain.models import VaultGraph
 
 logger = structlog.get_logger(__name__)
 
@@ -293,35 +296,29 @@ def note_graph(
         no_default_excludes=no_default_excludes,
     )
     vault_registry = VaultRegistry(vault_index)
-    vault_graph = build_vault_digraph(vault_index=vault_index)
+    vault_graph = get_full_graph(vault_index=vault_index)
 
     try:
-        ego_graph = build_note_ego_graph(slug, vault_graph.digraph, depth=depth)
+        neighborhood_graph = get_neighborhood_graph(slug, vault_graph, depth=depth)
     except KeyError as exc:
         raise click.UsageError(f"Unknown slug '{slug}'.") from exc
 
-    ego_vault_graph = VaultGraph(
-        vault_root=vault_root,
-        metadata=VaultGraphMetadata(edge_count=ego_graph.number_of_edges()),
-        digraph=ego_graph,
-    )
-
     payload_obj: object
     if style == "layered":
-        payload_obj = _serialize_layered_repr(slug, ego_vault_graph, vault_registry)
+        payload_obj = _serialize_layered_repr(slug, neighborhood_graph, vault_registry)
     elif style == "adjacency_list":
-        payload_obj = _serialize_adjacency_list(ego_vault_graph, vault_registry)
+        payload_obj = _serialize_adjacency_list(neighborhood_graph, vault_registry)
     else:
-        payload_obj = _serialize_edge_list(ego_vault_graph, vault_registry)
+        payload_obj = _serialize_edge_list(neighborhood_graph, vault_registry)
 
     if output_format == "json":
         emit_json_output(json.dumps(payload_obj, indent=2), output)
     elif style == "layered":
-        emit_pretty_output(_render_layered_table(slug, ego_vault_graph, vault_registry), output)
+        emit_pretty_output(_render_layered_table(slug, neighborhood_graph, vault_registry), output)
     elif style == "adjacency_list":
-        emit_pretty_output(_render_adjacency_list_table(ego_vault_graph, vault_registry), output)
+        emit_pretty_output(_render_adjacency_list_table(neighborhood_graph, vault_registry), output)
     else:
-        emit_pretty_output(_render_edge_list_table(ego_vault_graph, vault_registry), output)
+        emit_pretty_output(_render_edge_list_table(neighborhood_graph, vault_registry), output)
     console.print("Link tracing complete")
     logger.info("link.tracing.complete")
     return 0
@@ -450,7 +447,7 @@ def graph_cmd(
         no_default_excludes=no_default_excludes,
     )
     vault_registry = VaultRegistry(vault_index)
-    vault_graph = build_vault_digraph(vault_index)
+    vault_graph = get_full_graph(vault_index)
 
     payload_obj: object
     if style == "adjacency_list":

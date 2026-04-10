@@ -84,6 +84,15 @@ infrastructure -> domain
   - `vault_net.domain.*` -> anything outside `vault_net.domain.*`
   - `vault_net.application.*` -> `vault_net.infrastructure.*` (except in `application/api.py`, which is the package facade)
 
+## Naming Conventions
+
+- Prefer domain terms in domain/application function names (for example: `full_graph`, `neighborhood_graph`, `index`).
+- Avoid infrastructure or library terms in domain/application names (for example: `networkx`, `digraph`, `ego`).
+- Keep infrastructure-specific names only in infrastructure adapters (for example: `NetworkXGraphBuilder`).
+- Use use-case class names in `VerbNounUseCase` form (for example: `BuildFullGraphUseCase`).
+- Keep use-case module names aligned with class names and responsibility (for example: `build_full_graph.py`).
+- Name service modules after their service role (for example: `vault_registry.py`, `slug_service.py`).
+
 ## Testing Strategy
 
 - Unit tests focus on one layer at a time.

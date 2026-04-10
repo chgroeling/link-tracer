@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from vault_net.domain.services.registry import VaultRegistry
+from vault_net.domain.services.vault_registry import VaultRegistry
 from vault_net.infrastructure.scanner.matterify_scanner import MatterifyVaultScanner
 
 
