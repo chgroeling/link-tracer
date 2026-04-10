@@ -5,9 +5,32 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+if TYPE_CHECKING:
     from pathlib import Path
 
     from vault_net.domain.models import VaultGraph, VaultIndex
+
+
+class VaultDiGraph(Protocol):
+    """Minimal graph interface needed by domain and interface layers."""
+
+    def nodes(self) -> Iterable[str]: ...
+
+    def edges(self) -> Iterable[tuple[str, str]]: ...
+
+    def successors(self, node: str) -> Iterable[str]: ...
+
+    def bfs_layers(self, source: str) -> list[list[str]]: ...
+
+    def number_of_nodes(self) -> int: ...
+
+    def number_of_edges(self) -> int: ...
+
+    def __contains__(self, node: str) -> bool: ...
+
+    def ego_graph(self, source: str, *, radius: int) -> VaultDiGraph: ...
 
 
 class VaultScanner(Protocol):

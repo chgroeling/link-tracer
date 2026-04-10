@@ -157,6 +157,10 @@ module = "vault_net.infrastructure.graph.networkx_graph_builder"
 disallow_any_unimported = false
 
 [[tool.mypy.overrides]]
+module = "vault_net.infrastructure.graph.networkx_vault_digraph"
+disallow_any_unimported = false
+
+[[tool.mypy.overrides]]
 module = "vault_net.interface.formatters.views"
 disallow_any_unimported = false
 

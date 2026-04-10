@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import networkx as nx
+    from vault_net.domain.protocols import VaultDiGraph
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +47,7 @@ class VaultGraph:
 
     vault_root: Path
     metadata: VaultGraphMetadata
-    digraph: nx.DiGraph[str]
+    digraph: VaultDiGraph
 
 
 @dataclass(frozen=True, slots=True)

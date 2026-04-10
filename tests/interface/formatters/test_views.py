@@ -9,6 +9,7 @@ import networkx as nx
 
 from vault_net.domain.models import VaultFile, VaultGraph, VaultGraphMetadata
 from vault_net.domain.services.vault_registry import VaultRegistry
+from vault_net.infrastructure.graph.networkx_vault_digraph import NetworkXVaultDiGraph
 from vault_net.infrastructure.scanner.matterify_scanner import MatterifyVaultScanner
 from vault_net.interface.formatters.views import build_layered_repr, build_vault_edge_list
 
@@ -33,7 +34,7 @@ def _build_graph(graph: nx.DiGraph[str]) -> VaultGraph:
     return VaultGraph(
         vault_root=Path("/vault"),
         metadata=VaultGraphMetadata(edge_count=graph.number_of_edges()),
-        digraph=graph,
+        digraph=NetworkXVaultDiGraph(graph),
     )
 
 

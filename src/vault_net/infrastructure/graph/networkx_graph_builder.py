@@ -10,6 +10,7 @@ import structlog
 
 from vault_net.consts import _POSSIBLE_EXTENSIONS
 from vault_net.domain.models import VaultGraph, VaultGraphMetadata
+from vault_net.infrastructure.graph.networkx_vault_digraph import NetworkXVaultDiGraph
 
 if TYPE_CHECKING:
     from vault_net.domain.models import VaultIndex, VaultNote
@@ -114,7 +115,7 @@ class NetworkXGraphBuilder:
         return VaultGraph(
             vault_root=vault_index.vault_root,
             metadata=VaultGraphMetadata(edge_count=len(slug_edges)),
-            digraph=graph,
+            digraph=NetworkXVaultDiGraph(graph),
         )
 
     def build_neighborhood_graph(
@@ -129,8 +130,7 @@ class NetworkXGraphBuilder:
         if source_slug not in graph.digraph:
             raise KeyError(source_slug)
 
-        ego = nx.ego_graph(graph.digraph, source_slug, radius=depth, undirected=True)
-        neighborhood = nx.DiGraph(ego)
+        neighborhood = graph.digraph.ego_graph(source_slug, radius=depth)
         return VaultGraph(
             vault_root=graph.vault_root,
             metadata=VaultGraphMetadata(edge_count=neighborhood.number_of_edges()),
