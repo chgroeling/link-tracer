@@ -30,23 +30,73 @@ infrastructure -> domain
 .
 ├── AGENTS.md
 ├── README.md
+├── pyproject.toml
 ├── src/
 │   └── vault_net/
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── consts.py
+│       ├── logging.py
 │       ├── application/
+│       │   ├── __init__.py
+│       │   ├── api.py
 │       │   └── use_cases/
+│       │       ├── __init__.py
+│       │       ├── build_full_graph.py
+│       │       ├── build_neighborhood_graph.py
+│       │       ├── scan_vault.py
+│       │       └── trace_note_links.py
 │       ├── domain/
+│       │   ├── __init__.py
+│       │   ├── models.py
+│       │   ├── protocols.py
 │       │   └── services/
+│       │       ├── __init__.py
+│       │       ├── resolve_note_input.py
+│       │       ├── slug_service.py
+│       │       └── vault_registry.py
 │       ├── infrastructure/
+│       │   ├── __init__.py
 │       │   ├── graph/
+│       │   │   ├── __init__.py
+│       │   │   ├── networkx_graph_builder.py
+│       │   │   └── networkx_vault_digraph.py
 │       │   └── scanner/
+│       │       ├── __init__.py
+│       │       └── matterify_scanner.py
 │       └── interface/
+│           ├── __init__.py
 │           ├── cli/
+│           │   ├── __init__.py
+│           │   └── main.py
 │           └── formatters/
+│               ├── __init__.py
+│               └── views.py
 └── tests/
+    ├── __init__.py
+    ├── conftest.py
+    ├── fixtures.py
     ├── domain/
+    │   └── services/
+    │       ├── test_registry.py
+    │       ├── test_resolve_note_input.py
+    │       └── test_slug.py
     ├── infrastructure/
+    │   ├── graph/
+    │   │   └── test_networkx_graph_builder.py
+    │   └── scanner/
+    │       └── test_matterify_scanner.py
     ├── integration/
-    └── interface/
+    │   └── obsilink/
+    │       └── test_extraction.py
+    ├── interface/
+    │   ├── formatters/
+    │   │   └── test_views.py
+    │   └── test_cli.py
+    └── application/
+        └── use_cases/
+            ├── __init__.py
+            └── test_trace_note_links.py
 ```
 
 ## Layer Responsibilities
@@ -74,7 +124,6 @@ infrastructure -> domain
 - Handles user interaction and output formatting.
 - Instantiates concrete infrastructure adapters and calls application use cases.
 - Should be thin: validate input, invoke use case, render output.
-
 ## Import Rules
 
 - Allowed:
@@ -115,6 +164,33 @@ tests/
 └── interface/
 ```
 
+## Layer Responsibilities
+
+### Domain
+
+- Contains pure entities and business rules.
+- No library-specific behavior should leak into domain entities.
+- Protocols define required behavior (`VaultScanner`, `GraphBuilder`) without binding to concrete tools.
+
+### Application
+
+- Contains orchestration logic as use cases.
+- Receives dependencies via constructor injection.
+- Coordinates domain services and ports, but does not parse CLI or call third-party libraries directly.
+- `application/api.py` serves as the package facade that wires default infrastructure adapters to use cases.
+
+### Infrastructure
+
+- Implements domain protocols using third-party dependencies (`matterify`, `obsilink`, `networkx`).
+- Converts external objects into domain models.
+- May use third-party libraries but must not leak their types into domain models.
+
+### Interface
+
+- Handles user interaction and output formatting.
+- Instantiates concrete infrastructure adapters and calls application use cases.
+- Should be thin: validate input, invoke use case, render output.
+
 ## Rules
 
 - Use skill `python-code-style` and `python-design-patterns` before adding/modifying python code.
@@ -147,4 +223,4 @@ tests/
 
 Run before completing a change:
 
-`uv run ruff format src tests && uv run ruff check src tests && uv run mypy src tests && uv run pytest`
+`uv run ruff format src tests && uv run ruff check --fix src tests && uv run mypy src tests && uv run pytest`
