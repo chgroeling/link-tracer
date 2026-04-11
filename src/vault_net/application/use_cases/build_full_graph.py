@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import structlog
 
 if TYPE_CHECKING:
-    from vault_net.domain.models import VaultGraph, VaultIndex
+    from vault_net.domain.models import VaultGraph, VaultIndex, VaultLink
     from vault_net.domain.protocols import GraphBuilder
 
 logger = structlog.get_logger(__name__)
@@ -20,12 +20,16 @@ class BuildFullGraphUseCase:
     def __init__(self, graph_builder: GraphBuilder) -> None:
         self._graph_builder = graph_builder
 
-    def execute(self, vault_index: VaultIndex) -> VaultGraph:
+    def execute(
+        self,
+        vault_index: VaultIndex,
+        note_links: dict[str, list[VaultLink]],
+    ) -> VaultGraph:
         """Return a resolved graph for the full vault."""
         start = time.monotonic()
         logger.debug("use_case.build_full_graph.start", file_count=len(vault_index.files))
 
-        graph = self._graph_builder.build_full_graph(vault_index)
+        graph = self._graph_builder.build_full_graph(vault_index, note_links)
 
         duration = time.monotonic() - start
         logger.info(

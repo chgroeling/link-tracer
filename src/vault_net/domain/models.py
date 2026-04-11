@@ -71,14 +71,13 @@ class VaultFile:
 
 @dataclass(frozen=True, slots=True)
 class VaultNote(VaultFile):
-    """Scanned note with metadata and extracted links."""
+    """Scanned note with metadata."""
 
     status: str
     error: str | None
     file_hash: str
     frontmatter: dict[str, object] | None
     stats: VaultFileStats
-    links: list[VaultLink]
 
     def to_file(self) -> VaultFile:
         """Return this note as a lightweight file identity."""

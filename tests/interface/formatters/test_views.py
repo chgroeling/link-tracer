@@ -103,7 +103,7 @@ def test_build_vault_edge_list_returns_lightweight_vault_file_pairs(tmp_path: Pa
     (vault_root / "about.md").write_text("", encoding="utf-8")
 
     scanner = MatterifyVaultScanner()
-    vault_index = scanner.scan(vault_root)
+    vault_index, _ = scanner.scan(vault_root)
     vault_registry = VaultRegistry(vault_index)
 
     home_slug = next(f.slug for f in vault_index.files if f.file_path.endswith("home.md"))

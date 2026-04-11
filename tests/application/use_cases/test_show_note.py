@@ -20,9 +20,10 @@ class TestShowNoteUseCase:
         mock_graph_builder = MagicMock()
 
         mock_vault_index = MagicMock(spec=VaultIndex)
+        mock_note_links = MagicMock()
         mock_full_graph = MagicMock(spec=VaultGraph)
 
-        mock_scanner.scan.return_value = mock_vault_index
+        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
         mock_graph_builder.build_full_graph.return_value = mock_full_graph
 
         use_case = ShowNoteUseCase(
@@ -65,7 +66,9 @@ class TestShowNoteUseCase:
             extra_exclude_dir=("excluded",),
             no_default_excludes=True,
         )
-        mock_graph_builder.build_full_graph.assert_called_once_with(mock_vault_index)
+        mock_graph_builder.build_full_graph.assert_called_once_with(
+            mock_vault_index, mock_note_links
+        )
 
         assert isinstance(result, NoteShow)
         assert result.note.slug == "test-slug"
@@ -76,8 +79,9 @@ class TestShowNoteUseCase:
         mock_graph_builder = MagicMock()
 
         mock_vault_index = MagicMock(spec=VaultIndex)
+        mock_note_links = MagicMock()
         mock_full_graph = MagicMock(spec=VaultGraph)
-        mock_scanner.scan.return_value = mock_vault_index
+        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
         mock_graph_builder.build_full_graph.return_value = mock_full_graph
 
         use_case = ShowNoteUseCase(
@@ -146,7 +150,8 @@ class TestShowNoteUseCase:
         mock_graph_builder = MagicMock()
 
         mock_vault_index = MagicMock(spec=VaultIndex)
-        mock_scanner.scan.return_value = mock_vault_index
+        mock_note_links = MagicMock()
+        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
 
         use_case = ShowNoteUseCase(
             scanner=mock_scanner,

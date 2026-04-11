@@ -19,7 +19,7 @@ def simple_vault(tmp_path: Path) -> tuple[Path, VaultRegistry]:
     (vault_root / "about.md").write_text("", encoding="utf-8")
 
     scanner = MatterifyVaultScanner()
-    vault_index = scanner.scan(vault_root)
+    vault_index, _ = scanner.scan(vault_root)
     return vault_root, VaultRegistry(vault_index)
 
 
@@ -35,7 +35,7 @@ def structured_vault(tmp_path: Path) -> tuple[Path, Path, VaultRegistry]:
     (subdir / "Die drei ethischen Regeln.md").write_text("", encoding="utf-8")
 
     scanner = MatterifyVaultScanner()
-    vault_index = scanner.scan(vault_root)
+    vault_index, _ = scanner.scan(vault_root)
     return vault_root, subdir, VaultRegistry(vault_index)
 
 
@@ -46,7 +46,7 @@ def test_vault_registry_provides_bidirectional_lookup(tmp_path: Path) -> None:
     (vault_root / "home.md").write_text("", encoding="utf-8")
 
     scanner = MatterifyVaultScanner()
-    vault_index = scanner.scan(vault_root)
+    vault_index, _ = scanner.scan(vault_root)
     lookup = VaultRegistry(vault_index)
     home_note = vault_index.files[0]
 
@@ -135,7 +135,7 @@ def test_resolve_to_slug_returns_none_for_path_not_in_vault(
     (other_vault / "home.md").write_text("", encoding="utf-8")
 
     scanner = MatterifyVaultScanner()
-    vault_index = scanner.scan(other_vault)
+    vault_index, _ = scanner.scan(other_vault)
     registry = VaultRegistry(vault_index)
 
     assert registry.resolve_to_slug(str(outside_vault), other_vault) is None

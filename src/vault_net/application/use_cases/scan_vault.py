@@ -10,7 +10,7 @@ import structlog
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from vault_net.domain.models import VaultIndex
+    from vault_net.domain.models import VaultIndex, VaultLink, VaultNote
     from vault_net.domain.protocols import VaultScanner
 
 logger = structlog.get_logger(__name__)
@@ -28,12 +28,12 @@ class ScanVaultUseCase:
         *,
         extra_exclude_dir: tuple[str, ...] = (),
         no_default_excludes: bool = False,
-    ) -> VaultIndex:
-        """Scan the vault and return the resulting index."""
+    ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
+        """Scan the vault and return the resulting index with note links."""
         start = time.monotonic()
         logger.debug("use_case.scan_vault.start", vault_root=str(vault_root))
 
-        index = self._scanner.scan(
+        index, note_links = self._scanner.scan(
             vault_root,
             extra_exclude_dir=extra_exclude_dir,
             no_default_excludes=no_default_excludes,
@@ -45,4 +45,4 @@ class ScanVaultUseCase:
             duration=round(duration, 4),
             total_files=index.metadata.total_files,
         )
-        return index
+        return index, note_links

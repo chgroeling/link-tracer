@@ -7,7 +7,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from vault_net.domain.models import NoteLinkTrace, NoteShow, VaultGraph, VaultIndex
+    from vault_net.domain.models import (
+        NoteLinkTrace,
+        NoteShow,
+        VaultGraph,
+        VaultIndex,
+        VaultLink,
+    )
 
 from vault_net.application.use_cases.build_full_graph import BuildFullGraphUseCase
 from vault_net.application.use_cases.build_neighborhood_graph import BuildNeighborhoodGraphUseCase
@@ -22,8 +28,8 @@ def scan_vault(
     vault_root: Path,
     extra_exclude_dir: tuple[str, ...] = (),
     no_default_excludes: bool = False,
-) -> VaultIndex:
-    """Scan vault directory and build a domain index."""
+) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
+    """Scan vault directory and build a domain index with note links."""
     use_case = ScanVaultUseCase(scanner=MatterifyVaultScanner())
     return use_case.execute(
         vault_root,
@@ -32,10 +38,13 @@ def scan_vault(
     )
 
 
-def get_full_graph(vault_index: VaultIndex) -> VaultGraph:
+def get_full_graph(
+    vault_index: VaultIndex,
+    note_links: dict[str, list[VaultLink]],
+) -> VaultGraph:
     """Build and return the resolved full-vault graph."""
     use_case = BuildFullGraphUseCase(graph_builder=NetworkXGraphBuilder())
-    return use_case.execute(vault_index)
+    return use_case.execute(vault_index, note_links)
 
 
 def get_neighborhood_graph(

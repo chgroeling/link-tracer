@@ -42,7 +42,7 @@ class ShowNoteUseCase:
         )
 
         logger.debug("use_case.show_note.step.scanning")
-        vault_index = self._scanner.scan(
+        vault_index, note_links = self._scanner.scan(
             vault_root,
             extra_exclude_dir=extra_exclude_dir,
             no_default_excludes=no_default_excludes,
@@ -54,7 +54,7 @@ class ShowNoteUseCase:
             raise KeyError(note_input)
 
         logger.debug("use_case.show_note.step.building_full_graph")
-        full_graph = self._graph_builder.build_full_graph(vault_index)
+        full_graph = self._graph_builder.build_full_graph(vault_index, note_links)
 
         logger.debug(
             "use_case.show_note.step.resolving_links",

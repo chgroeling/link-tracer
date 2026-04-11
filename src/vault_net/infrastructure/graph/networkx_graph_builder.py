@@ -13,7 +13,7 @@ from vault_net.domain.models import VaultGraph, VaultGraphMetadata
 from vault_net.infrastructure.graph.networkx_vault_digraph import NetworkXVaultDiGraph
 
 if TYPE_CHECKING:
-    from vault_net.domain.models import VaultIndex, VaultNote
+    from vault_net.domain.models import VaultIndex, VaultLink, VaultNote
 
 logger = structlog.get_logger(__name__)
 
@@ -75,14 +75,16 @@ def _build_lookup_maps(
     return name_to_slug, stem_to_slug, relative_path_to_slug
 
 
-def _build_vault_slug_edge_list(vault_index: VaultIndex) -> list[tuple[str, str]]:
-    files = vault_index.files
+def _build_vault_slug_edge_list(
+    files: list[VaultNote],
+    note_links: dict[str, list[VaultLink]],
+) -> list[tuple[str, str]]:
     name_to_slug, stem_to_slug, relative_path_to_slug = _build_lookup_maps(files)
     edges: set[tuple[str, str]] = set()
 
     for file in files:
         source_slug = file.slug
-        for link in file.links:
+        for link in note_links.get(source_slug, []):
             target_slug = _resolve_link_to_slug(
                 Path(link.target),
                 name_to_slug=name_to_slug,
@@ -106,9 +108,13 @@ def _build_vault_slug_edge_list(vault_index: VaultIndex) -> list[tuple[str, str]
 class NetworkXGraphBuilder:
     """GraphBuilder implementation backed by NetworkX."""
 
-    def build_full_graph(self, vault_index: VaultIndex) -> VaultGraph:
+    def build_full_graph(
+        self,
+        vault_index: VaultIndex,
+        note_links: dict[str, list[VaultLink]],
+    ) -> VaultGraph:
         graph: nx.DiGraph[str] = nx.DiGraph()
-        slug_edges = _build_vault_slug_edge_list(vault_index)
+        slug_edges = _build_vault_slug_edge_list(vault_index.files, note_links)
         graph.add_edges_from(slug_edges)
         graph.add_nodes_from(file.slug for file in vault_index.files)
 

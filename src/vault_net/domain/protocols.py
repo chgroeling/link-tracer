@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from vault_net.domain.models import VaultGraph, VaultIndex
+    from vault_net.domain.models import VaultGraph, VaultIndex, VaultLink
 
 
 class VaultDiGraph(Protocol):
@@ -44,14 +44,18 @@ class VaultScanner(Protocol):
         *,
         extra_exclude_dir: tuple[str, ...] = (),
         no_default_excludes: bool = False,
-    ) -> VaultIndex:
-        """Scan the vault and return a domain index."""
+    ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
+        """Scan the vault and return a domain index with note links."""
 
 
 class GraphBuilder(Protocol):
     """Port for graph construction and traversal."""
 
-    def build_full_graph(self, vault_index: VaultIndex) -> VaultGraph:
+    def build_full_graph(
+        self,
+        vault_index: VaultIndex,
+        note_links: dict[str, list[VaultLink]],
+    ) -> VaultGraph:
         """Build a resolved graph from a vault index."""
 
     def build_neighborhood_graph(

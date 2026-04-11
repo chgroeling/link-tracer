@@ -411,7 +411,7 @@ def index_cmd(
     logger.debug("starting.vault_index_scan", vault_root=str(vault_root) if vault_root else None)
     vault_root = resolve_vault_root(vault_root)
     logger.info("scanning.vault.index", vault_root=str(vault_root))
-    vault_index = scan_vault(
+    vault_index, _ = scan_vault(
         vault_root,
         extra_exclude_dir=extra_exclude_dir,
         no_default_excludes=no_default_excludes,
@@ -490,13 +490,13 @@ def graph_cmd(
     logger.debug("starting.vault_edge_list", vault_root=str(vault_root) if vault_root else None)
     vault_root = resolve_vault_root(vault_root)
     logger.info("building.vault.edge_list", vault_root=str(vault_root))
-    vault_index = scan_vault(
+    vault_index, note_links = scan_vault(
         vault_root,
         extra_exclude_dir=extra_exclude_dir,
         no_default_excludes=no_default_excludes,
     )
     vault_registry = VaultRegistry(vault_index)
-    vault_graph = get_full_graph(vault_index)
+    vault_graph = get_full_graph(vault_index, note_links)
 
     payload_obj: object
     if style == "adjacency_list":

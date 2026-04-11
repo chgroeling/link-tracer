@@ -37,8 +37,11 @@ def _to_vault_link(link: Any) -> VaultLink:
     )
 
 
-def _convert_scan_to_index(vault_root: Path, scan_result: ScanResults) -> VaultIndex:
-    """Convert a matterify scan result to a `VaultIndex`."""
+def _convert_scan_to_index(
+    vault_root: Path,
+    scan_result: ScanResults,
+) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
+    """Convert a matterify scan result to a `VaultIndex` and note links dict."""
     meta = scan_result.metadata
     files_with_frontmatter = cast("int", meta.files_with_frontmatter)
     files_without_frontmatter = cast("int", meta.files_without_frontmatter)
@@ -54,6 +57,7 @@ def _convert_scan_to_index(vault_root: Path, scan_result: ScanResults) -> VaultI
     )
 
     files: list[VaultNote] = []
+    note_links: dict[str, list[VaultLink]] = {}
     slug_counts: dict[str, int] = {}
     for entry in scan_result.files:
         raw_links = getattr(entry, "custom_data", None) or []
@@ -62,24 +66,26 @@ def _convert_scan_to_index(vault_root: Path, scan_result: ScanResults) -> VaultI
 
         filename = Path(entry.file_path).name
         slug = generate_slug(filename, slug_counts)
-        files.append(
-            VaultNote(
-                file_path=entry.file_path,
-                frontmatter=entry.frontmatter,
-                status=entry.status,
-                error=entry.error,
-                stats=VaultFileStats(
-                    file_size=entry_stats.file_size,
-                    modified_time=entry_stats.modified_time,
-                    access_time=entry_stats.access_time,
-                ),
-                file_hash=entry_hash,
-                links=[_to_vault_link(link) for link in raw_links if link.is_file],
-                slug=slug,
-            )
+        note = VaultNote(
+            file_path=entry.file_path,
+            frontmatter=entry.frontmatter,
+            status=entry.status,
+            error=entry.error,
+            stats=VaultFileStats(
+                file_size=entry_stats.file_size,
+                modified_time=entry_stats.modified_time,
+                access_time=entry_stats.access_time,
+            ),
+            file_hash=entry_hash,
+            slug=slug,
         )
+        note_link_list = [_to_vault_link(link) for link in raw_links if link.is_file]
+        if note_link_list:
+            note_links[note.slug] = note_link_list
+        files.append(note)
 
-    return VaultIndex(vault_root=vault_root, metadata=metadata, files=files)
+    vault_index = VaultIndex(vault_root=vault_root, metadata=metadata, files=files)
+    return vault_index, note_links
 
 
 class MatterifyVaultScanner:
@@ -91,8 +97,8 @@ class MatterifyVaultScanner:
         *,
         extra_exclude_dir: tuple[str, ...] = (),
         no_default_excludes: bool = False,
-    ) -> VaultIndex:
-        """Scan vault directory and build a domain index."""
+    ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
+        """Scan vault directory and build a domain index with note links."""
         start = time.monotonic()
         logger.debug("scan_vault.start", vault_root=str(vault_root))
 
@@ -106,11 +112,11 @@ class MatterifyVaultScanner:
             callback=extract_links,
         )
 
-        index = _convert_scan_to_index(vault_root, scan_result)
+        index, note_links = _convert_scan_to_index(vault_root, scan_result)
         duration = time.monotonic() - start
         logger.debug(
             "scan_vault.complete",
             duration=round(duration, 4),
             file_count=len(index.files),
         )
-        return index
+        return index, note_links
