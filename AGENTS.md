@@ -54,6 +54,7 @@ infrastructure -> domain
 ### Domain
 
 - Contains pure entities and business rules.
+- Handles note identity resolution (slug vs path) via domain services.
 - No library-specific behavior should leak into domain entities.
 - Protocols define required behavior (`VaultScanner`, `GraphBuilder`) without binding to concrete tools.
 
@@ -121,6 +122,20 @@ tests/
 - Keep code ASCII by default.
 - Prefer explicit, simple composition over meta-framework abstractions.
 - Do not introduce layer-crossing imports for convenience.
+
+## Design Patterns
+
+### Note Identity Resolution
+
+- Concerns the conversion of user input (slug, relative path, or absolute path) into a canonical slug.
+- Implemented in the Domain layer (`VaultRegistry.resolve_to_slug`).
+- Resolution order:
+    1. Direct slug match.
+    2. Vault-relative path match.
+    3. Resolved absolute path (converted to vault-relative).
+- Uses `.resolve()` on paths to handle shortest canonical representations.
+- Log resolution attempts at `debug` level for traceability.
+- Always perform resolution after vault scanning to avoid redundant I/O.
 
 ## Workflows
 
