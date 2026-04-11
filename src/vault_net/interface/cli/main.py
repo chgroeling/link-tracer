@@ -131,16 +131,16 @@ def main() -> None:
 )
 @click.option(
     "-e",
-    "--exclude-dir",
+    "--exclude",
     "extra_exclude_dir",
     multiple=True,
-    metavar="DIR",
+    metavar="GLOB",
     help="Additional glob pattern to exclude from traversal (repeatable)",
 )
 @click.option(
     "--no-default-excludes",
     is_flag=True,
-    help="Disable built-in default exclusions; use only --exclude-dir entries",
+    help="Disable built-in default exclusions; use only --exclude entries",
 )
 @click.option(
     "--basename",
@@ -233,16 +233,16 @@ def note_graph(
 @click.option("--verbose", is_flag=True, help="Enable verbose console output")
 @click.option(
     "-e",
-    "--exclude-dir",
+    "--exclude",
     "extra_exclude_dir",
     multiple=True,
-    metavar="DIR",
+    metavar="GLOB",
     help="Additional glob pattern to exclude from traversal (repeatable)",
 )
 @click.option(
     "--no-default-excludes",
     is_flag=True,
-    help="Disable built-in default exclusions; use only --exclude-dir entries",
+    help="Disable built-in default exclusions; use only --exclude entries",
 )
 @click.option(
     "--format",
@@ -324,16 +324,16 @@ def index_cmd(
 )
 @click.option(
     "-e",
-    "--exclude-dir",
+    "--exclude",
     "extra_exclude_dir",
     multiple=True,
-    metavar="DIR",
+    metavar="GLOB",
     help="Additional glob pattern to exclude from traversal (repeatable)",
 )
 @click.option(
     "--no-default-excludes",
     is_flag=True,
-    help="Disable built-in default exclusions; use only --exclude-dir entries",
+    help="Disable built-in default exclusions; use only --exclude entries",
 )
 @click.option(
     "--basename",
@@ -412,16 +412,16 @@ def graph_cmd(
 )
 @click.option(
     "-e",
-    "--exclude-dir",
+    "--exclude",
     "extra_exclude_dir",
     multiple=True,
-    metavar="DIR",
+    metavar="GLOB",
     help="Additional glob pattern to exclude from traversal (repeatable)",
 )
 @click.option(
     "--no-default-excludes",
     is_flag=True,
-    help="Disable built-in default exclusions; use only --exclude-dir entries",
+    help="Disable built-in default exclusions; use only --exclude entries",
 )
 @click.option(
     "--basename",
