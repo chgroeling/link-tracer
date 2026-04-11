@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 from matterify import scan_directory
-from matterify.constants import BLACKLIST
+from matterify.constants import DEFAULT_EXCLUDE_PATTERNS
 from obsilink import extract_links
 
 from vault_net.domain.models import (
@@ -46,7 +46,7 @@ def _convert_scan_to_index(
     files_with_frontmatter = cast("int", meta.files_with_frontmatter)
     files_without_frontmatter = cast("int", meta.files_without_frontmatter)
     metadata = VaultIndexMetadata(
-        root=meta.root,
+        root=str(meta.root),
         total_files=meta.total_files,
         files_with_frontmatter=files_with_frontmatter,
         files_without_frontmatter=files_without_frontmatter,
@@ -64,10 +64,11 @@ def _convert_scan_to_index(
         entry_stats = cast("FileStats", entry.stats)
         entry_hash = cast("str", entry.file_hash)
 
-        filename = Path(entry.file_path).name
+        file_path_str = str(entry.file_path)
+        filename = Path(file_path_str).name
         slug = generate_slug(filename, slug_counts)
         note = VaultNote(
-            file_path=entry.file_path,
+            file_path=file_path_str,
             frontmatter=entry.frontmatter,
             status=entry.status,
             error=entry.error,
@@ -98,11 +99,21 @@ class MatterifyVaultScanner:
         extra_exclude_dir: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
-        """Scan vault directory and build a domain index with note links."""
+        """Scan vault directory and build a domain index with note links.
+
+        Args:
+            vault_root: Root directory of the vault to scan.
+            extra_exclude_dir: Additional glob patterns to exclude from traversal
+                (e.g., ".temp", "**/drafts"). These are passed to the scanner's
+                exclude parameter alongside any default exclusion patterns.
+            no_default_excludes: If True, exclude only the extra patterns provided.
+                If False (default), also apply built-in default exclusion patterns
+                (e.g., "**/.git", "**/.obsidian").
+        """
         start = time.monotonic()
         logger.debug("scan_vault.start", vault_root=str(vault_root))
 
-        base = () if no_default_excludes else BLACKLIST
+        base = () if no_default_excludes else DEFAULT_EXCLUDE_PATTERNS
         scan_result = scan_directory(
             vault_root,
             exclude=base + extra_exclude_dir,

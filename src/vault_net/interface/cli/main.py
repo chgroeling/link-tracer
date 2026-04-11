@@ -135,7 +135,7 @@ def main() -> None:
     "extra_exclude_dir",
     multiple=True,
     metavar="DIR",
-    help="Additional directory name to exclude from traversal (repeatable)",
+    help="Additional glob pattern to exclude from traversal (repeatable)",
 )
 @click.option(
     "--no-default-excludes",
@@ -237,7 +237,7 @@ def note_graph(
     "extra_exclude_dir",
     multiple=True,
     metavar="DIR",
-    help="Additional directory name to exclude from traversal (repeatable)",
+    help="Additional glob pattern to exclude from traversal (repeatable)",
 )
 @click.option(
     "--no-default-excludes",
@@ -328,7 +328,7 @@ def index_cmd(
     "extra_exclude_dir",
     multiple=True,
     metavar="DIR",
-    help="Additional directory name to exclude from traversal (repeatable)",
+    help="Additional glob pattern to exclude from traversal (repeatable)",
 )
 @click.option(
     "--no-default-excludes",
@@ -416,7 +416,7 @@ def graph_cmd(
     "extra_exclude_dir",
     multiple=True,
     metavar="DIR",
-    help="Additional directory name to exclude from traversal (repeatable)",
+    help="Additional glob pattern to exclude from traversal (repeatable)",
 )
 @click.option(
     "--no-default-excludes",

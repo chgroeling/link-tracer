@@ -400,7 +400,7 @@ wheels = [
 
 [[package]]
 name = "matterify"
-version = "0.5.0"
+version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -408,9 +408,9 @@ dependencies = [
     { name = "rich" },
     { name = "structlog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/63/5b5be2e3391cc7b496a70c7f2bd3dd324bcea00424bb426150824b0c8a8a/matterify-0.5.0.tar.gz", hash = "sha256:36b69b5b7fa319037ce7c572a95fbcc99a1057a8f08ecb295f3f8eeb5b9f5c8c", size = 60173, upload-time = "2026-04-10T06:46:17.256Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0a/81/b886dda8b82dc11f5bf92d47da3dc7f817520ab25be8ff913780a98a66dc/matterify-0.6.1.tar.gz", hash = "sha256:6bbac80694a881bfb586d7981f5f33fae37f9767fa7ece14008503552977b90f", size = 61176, upload-time = "2026-04-11T11:46:00.595Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/1c/6c7ab41772f1ec405fb818a6edf5112eeefda89e47183e0586f6cd0f70c3/matterify-0.5.0-py3-none-any.whl", hash = "sha256:f9fa66c691a4c314f2c4859bd3bf242d505012c4767386b618b743b0735f4dfa", size = 13185, upload-time = "2026-04-10T06:46:15.915Z" },
+    { url = "https://files.pythonhosted.org/packages/73/06/4f3b71f7fe8a321320653a5675c6ba4cc57a874ab590f7d6c877290658c4/matterify-0.6.1-py3-none-any.whl", hash = "sha256:f1338702e58e04ccfa0eb7bc47343f2786a2295e84b0a1469d249fd655166668", size = 13711, upload-time = "2026-04-11T11:45:59.132Z" },
 ]
 
 [[package]]
@@ -933,7 +933,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.3.2" },
-    { name = "matterify", specifier = ">=0.5.0" },
+    { name = "matterify", specifier = "==0.6.1" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.0" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.0" },
