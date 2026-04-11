@@ -26,14 +26,14 @@ from vault_net.infrastructure.scanner.matterify_scanner import MatterifyVaultSca
 
 def scan_vault(
     vault_root: Path,
-    extra_exclude_dir: tuple[str, ...] = (),
+    extra_exclude: tuple[str, ...] = (),
     no_default_excludes: bool = False,
 ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
     """Scan vault directory and build a domain index with note links."""
     use_case = ScanVaultUseCase(scanner=MatterifyVaultScanner())
     return use_case.execute(
         vault_root,
-        extra_exclude_dir=extra_exclude_dir,
+        extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
     )
 
@@ -63,7 +63,7 @@ def trace_note_links(
     note_input: str,
     *,
     depth: int = 1,
-    extra_exclude_dir: tuple[str, ...] = (),
+    extra_exclude: tuple[str, ...] = (),
     no_default_excludes: bool = False,
 ) -> NoteLinkTrace:
     """Trace links from a note, returning the neighborhood graph and index."""
@@ -75,7 +75,7 @@ def trace_note_links(
         vault_root,
         note_input,
         depth=depth,
-        extra_exclude_dir=extra_exclude_dir,
+        extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
     )
 
@@ -84,7 +84,7 @@ def show_note(
     vault_root: Path,
     note_input: str,
     *,
-    extra_exclude_dir: tuple[str, ...] = (),
+    extra_exclude: tuple[str, ...] = (),
     no_default_excludes: bool = False,
 ) -> NoteShow:
     """Show detailed information about a note including its links."""
@@ -95,6 +95,6 @@ def show_note(
     return use_case.execute(
         vault_root,
         note_input,
-        extra_exclude_dir=extra_exclude_dir,
+        extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
     )

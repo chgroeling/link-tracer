@@ -42,7 +42,7 @@ class VaultScanner(Protocol):
         self,
         vault_root: Path,
         *,
-        extra_exclude_dir: tuple[str, ...] = (),
+        extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
         """Scan the vault and return a domain index with note links."""

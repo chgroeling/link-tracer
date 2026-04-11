@@ -30,7 +30,7 @@ class ShowNoteUseCase:
         vault_root: Path,
         note_input: str,
         *,
-        extra_exclude_dir: tuple[str, ...] = (),
+        extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> NoteShow:
         """Scan vault, build graph, and show note details with links."""
@@ -44,7 +44,7 @@ class ShowNoteUseCase:
         logger.debug("use_case.show_note.step.scanning")
         vault_index, note_links = self._scanner.scan(
             vault_root,
-            extra_exclude_dir=extra_exclude_dir,
+            extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,
         )
 

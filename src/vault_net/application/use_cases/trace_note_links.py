@@ -31,7 +31,7 @@ class TraceNoteLinksUseCase:
         note_input: str,
         *,
         depth: int = 1,
-        extra_exclude_dir: tuple[str, ...] = (),
+        extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> NoteLinkTrace:
         """Scan vault, build graph, and extract neighborhood around note input."""
@@ -46,7 +46,7 @@ class TraceNoteLinksUseCase:
         logger.debug("use_case.trace_note_links.step.scanning")
         vault_index, note_links = self._scanner.scan(
             vault_root,
-            extra_exclude_dir=extra_exclude_dir,
+            extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,
         )
 

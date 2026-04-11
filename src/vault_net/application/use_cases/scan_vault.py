@@ -26,7 +26,7 @@ class ScanVaultUseCase:
         self,
         vault_root: Path,
         *,
-        extra_exclude_dir: tuple[str, ...] = (),
+        extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
         """Scan the vault and return the resulting index with note links."""
@@ -35,7 +35,7 @@ class ScanVaultUseCase:
 
         index, note_links = self._scanner.scan(
             vault_root,
-            extra_exclude_dir=extra_exclude_dir,
+            extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,
         )
 

@@ -57,13 +57,13 @@ class TestShowNoteUseCase:
             result = use_case.execute(
                 vault_root=tmp_path,
                 note_input="test-slug",
-                extra_exclude_dir=("excluded",),
+                extra_exclude=("excluded",),
                 no_default_excludes=True,
             )
 
         mock_scanner.scan.assert_called_once_with(
             tmp_path,
-            extra_exclude_dir=("excluded",),
+            extra_exclude=("excluded",),
             no_default_excludes=True,
         )
         mock_graph_builder.build_full_graph.assert_called_once_with(

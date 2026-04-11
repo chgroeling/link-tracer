@@ -96,14 +96,14 @@ class MatterifyVaultScanner:
         self,
         vault_root: Path,
         *,
-        extra_exclude_dir: tuple[str, ...] = (),
+        extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
         """Scan vault directory and build a domain index with note links.
 
         Args:
             vault_root: Root directory of the vault to scan.
-            extra_exclude_dir: Additional glob patterns to exclude from traversal
+            extra_exclude: Additional glob patterns to exclude from traversal
                 (e.g., ".temp", "**/drafts"). These are passed to the scanner's
                 exclude parameter alongside any default exclusion patterns.
             no_default_excludes: If True, exclude only the extra patterns provided.
@@ -116,7 +116,7 @@ class MatterifyVaultScanner:
         base = () if no_default_excludes else DEFAULT_EXCLUDE_PATTERNS
         scan_result = scan_directory(
             vault_root,
-            exclude=base + extra_exclude_dir,
+            exclude=base + extra_exclude,
             compute_hash=True,
             compute_stats=True,
             compute_frontmatter=True,

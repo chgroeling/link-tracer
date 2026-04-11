@@ -132,7 +132,7 @@ def main() -> None:
 @click.option(
     "-e",
     "--exclude",
-    "extra_exclude_dir",
+    "extra_exclude",
     multiple=True,
     metavar="GLOB",
     help="Additional glob pattern to exclude from traversal (repeatable)",
@@ -156,7 +156,7 @@ def note_graph(
     verbose: bool,
     style: str,
     output_format: str,
-    extra_exclude_dir: tuple[str, ...],
+    extra_exclude: tuple[str, ...],
     no_default_excludes: bool,
     basename: bool,
 ) -> int:
@@ -177,7 +177,7 @@ def note_graph(
             vault_root,
             note_input,
             depth=depth,
-            extra_exclude_dir=extra_exclude_dir,
+            extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,
         )
     except KeyError as exc:
@@ -234,7 +234,7 @@ def note_graph(
 @click.option(
     "-e",
     "--exclude",
-    "extra_exclude_dir",
+    "extra_exclude",
     multiple=True,
     metavar="GLOB",
     help="Additional glob pattern to exclude from traversal (repeatable)",
@@ -262,7 +262,7 @@ def index_cmd(
     output: Path | None,
     debug: bool,
     verbose: bool,
-    extra_exclude_dir: tuple[str, ...],
+    extra_exclude: tuple[str, ...],
     no_default_excludes: bool,
     output_format: str,
     basename: bool,
@@ -276,7 +276,7 @@ def index_cmd(
     logger.info("scanning.vault.index", vault_root=str(vault_root))
     vault_index, _ = scan_vault(
         vault_root,
-        extra_exclude_dir=extra_exclude_dir,
+        extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
     )
 
@@ -325,7 +325,7 @@ def index_cmd(
 @click.option(
     "-e",
     "--exclude",
-    "extra_exclude_dir",
+    "extra_exclude",
     multiple=True,
     metavar="GLOB",
     help="Additional glob pattern to exclude from traversal (repeatable)",
@@ -347,7 +347,7 @@ def graph_cmd(
     verbose: bool,
     style: str,
     output_format: str,
-    extra_exclude_dir: tuple[str, ...],
+    extra_exclude: tuple[str, ...],
     no_default_excludes: bool,
     basename: bool,
 ) -> int:
@@ -360,7 +360,7 @@ def graph_cmd(
     logger.info("building.vault.edge_list", vault_root=str(vault_root))
     vault_index, note_links = scan_vault(
         vault_root,
-        extra_exclude_dir=extra_exclude_dir,
+        extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
     )
     vault_registry = VaultRegistry(vault_index)
@@ -413,7 +413,7 @@ def graph_cmd(
 @click.option(
     "-e",
     "--exclude",
-    "extra_exclude_dir",
+    "extra_exclude",
     multiple=True,
     metavar="GLOB",
     help="Additional glob pattern to exclude from traversal (repeatable)",
@@ -435,7 +435,7 @@ def show_cmd(
     debug: bool,
     verbose: bool,
     output_format: str,
-    extra_exclude_dir: tuple[str, ...],
+    extra_exclude: tuple[str, ...],
     no_default_excludes: bool,
     basename: bool,
 ) -> int:
@@ -455,7 +455,7 @@ def show_cmd(
         note_show = show_note(
             vault_root,
             note_input,
-            extra_exclude_dir=extra_exclude_dir,
+            extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,
         )
     except KeyError as exc:
