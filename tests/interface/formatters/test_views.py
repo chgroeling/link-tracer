@@ -17,14 +17,15 @@ from vault_net.interface.formatters.views import build_layered_repr, build_vault
 @dataclass(frozen=True)
 class _StubNote:
     slug: str
+    file_path: str
 
     def to_file(self) -> VaultFile:
-        return VaultFile(slug=self.slug, file_path=self.slug)
+        return VaultFile(slug=self.slug, file_path=self.file_path)
 
 
 class _StubRegistry:
     def __init__(self, slugs: set[str]) -> None:
-        self._notes = {slug: _StubNote(slug=slug) for slug in slugs}
+        self._notes = {slug: _StubNote(slug=slug, file_path=slug) for slug in slugs}
 
     def get_file(self, slug: str) -> _StubNote | None:
         return self._notes.get(slug)
@@ -66,9 +67,7 @@ def test_build_layered_repr_empty_graph_yields_source_at_depth_zero() -> None:
     graph: nx.DiGraph[str] = nx.DiGraph()
     graph.add_node("home.md")
     result = build_layered_repr("home.md", _build_graph(graph), _build_registry(graph))
-    assert result["layers"] == [
-        {"depth": 0, "note": VaultFile(slug="home.md", file_path="home.md")}
-    ]
+    assert result["layers"] == [{"depth": 0, "note": {"slug": "home.md", "file_path": "home.md"}}]
 
 
 def test_build_layered_repr_backlinks_appear_at_depth_one() -> None:
@@ -77,7 +76,7 @@ def test_build_layered_repr_backlinks_appear_at_depth_one() -> None:
     graph.add_edge("other.md", "home.md")
     result = build_layered_repr("home.md", _build_graph(graph), _build_registry(graph))
     layers = result["layers"]
-    depths = {entry["note"].slug: entry["depth"] for entry in layers}
+    depths = {entry["note"]["slug"]: entry["depth"] for entry in layers}
     assert depths["home.md"] == 0
     assert depths["other.md"] == 1
 
@@ -89,7 +88,7 @@ def test_build_layered_repr_two_hop_note_appears_at_depth_two() -> None:
     graph.add_edge("about.md", "projects.md")
     result = build_layered_repr("home.md", _build_graph(graph), _build_registry(graph))
     layers = result["layers"]
-    depths = {entry["note"].slug: entry["depth"] for entry in layers}
+    depths = {entry["note"]["slug"]: entry["depth"] for entry in layers}
     assert depths["home.md"] == 0
     assert depths["about.md"] == 1
     assert depths["projects.md"] == 2

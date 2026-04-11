@@ -11,13 +11,13 @@ from rich.table import Table
 from rich.text import Text
 
 if TYPE_CHECKING:
-    from vault_net.domain.models import NoteShow, VaultFile, VaultGraph, VaultIndex
+    from vault_net.domain.models import NoteShow, VaultFile, VaultGraph, VaultIndex, VaultNote
     from vault_net.domain.services.vault_registry import VaultRegistry
 
 
 class _LayerEntry(TypedDict):
     depth: int
-    note: VaultFile
+    note: dict[str, object]
 
 
 class _LayeredRepr(TypedDict):
@@ -105,14 +105,16 @@ def build_layered_repr(
     vault_registry: _Registry,
 ) -> _LayeredRepr:
     """Transform an ego graph into a flat BFS depth-layer dictionary."""
+    from dataclasses import asdict
+
     layers: list[_LayerEntry] = []
     for depth, nodes in enumerate(graph.digraph.bfs_layers(source_slug)):
         for node in nodes:
             note = vault_registry.get_file(str(node))
             if note is None:
                 continue
-            resolved_note = cast("_RegistryNote", note)
-            layers.append({"depth": depth, "note": resolved_note.to_file()})
+            resolved_note = cast("VaultNote", note)
+            layers.append({"depth": depth, "note": asdict(resolved_note)})
 
     return {
         "source_note": source_slug,
