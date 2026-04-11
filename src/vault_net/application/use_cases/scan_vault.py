@@ -10,7 +10,7 @@ import structlog
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from vault_net.domain.models import VaultIndex, VaultLink, VaultNote
+    from vault_net.domain.models import VaultIndex, VaultLink
     from vault_net.domain.protocols import VaultScanner
 
 logger = structlog.get_logger(__name__)

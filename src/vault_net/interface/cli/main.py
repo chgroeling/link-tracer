@@ -32,7 +32,7 @@ from vault_net.interface.formatters.views import (
 from vault_net.logging import configure_debug_logging, get_console
 
 if TYPE_CHECKING:
-    from vault_net.domain.models import NoteShow, VaultGraph
+    from vault_net.domain.models import NoteShow, VaultGraph, VaultIndex
 
 logger = structlog.get_logger(__name__)
 
@@ -396,6 +396,19 @@ def note_graph(
     is_flag=True,
     help="Disable built-in default exclusions; use only --exclude-dir entries",
 )
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["pretty", "json"], case_sensitive=False),
+    default="pretty",
+    show_default=True,
+    help="Output format",
+)
+@click.option(
+    "--basename",
+    is_flag=True,
+    help="Show only filenames without path or extension in pretty output",
+)
 def index_cmd(
     vault_root: Path | None,
     output: Path | None,
@@ -403,8 +416,10 @@ def index_cmd(
     verbose: bool,
     extra_exclude_dir: tuple[str, ...],
     no_default_excludes: bool,
+    output_format: str,
+    basename: bool,
 ) -> int:
-    """Output the scanned vault index as JSON."""
+    """Output the scanned vault index as JSON or pretty table."""
     configure_debug_logging(debug)
     console = get_console(verbose)
 
@@ -416,8 +431,13 @@ def index_cmd(
         extra_exclude_dir=extra_exclude_dir,
         no_default_excludes=no_default_excludes,
     )
-    payload = json.dumps(asdict(vault_index), indent=2, default=str)
-    emit_json_output(payload, output)
+
+    if output_format == "json":
+        payload = json.dumps(asdict(vault_index), indent=2, default=str)
+        emit_json_output(payload, output)
+    else:
+        emit_pretty_output(_render_index_table(vault_index, basename), output)
+
     console.print("Vault index scan complete")
     logger.info("vault.index.scan.complete")
     return 0
@@ -576,6 +596,35 @@ def _render_note_show_table(note_show: NoteShow, use_basename: bool = False) -> 
         backward_header,
         backward_table if note_show.backward_links else Text(" None", style="dim"),
     )
+
+
+def _render_index_table(vault_index: VaultIndex, use_basename: bool = False) -> Group:
+    """Render vault index as a table with file stats."""
+    table = Table(
+        show_header=True,
+        header_style="bold",
+        box=None,
+    )
+    table.add_column("Slug", no_wrap=True, min_width=8)
+    table.add_column("Name" if use_basename else "Path", no_wrap=False, max_width=50)
+    table.add_column("Size", no_wrap=True, justify="right", max_width=10)
+    table.add_column("Modified", no_wrap=True, max_width=20)
+    table.add_column("Accessed", no_wrap=True, max_width=20)
+
+    for note in sorted(vault_index.files, key=lambda n: n.slug):
+        file_size = str(note.stats.file_size) if note.stats.file_size else "N/A"
+        modified = note.stats.modified_time or "N/A"
+        accessed = note.stats.access_time or "N/A"
+        table.add_row(
+            _slug_text(note.slug),
+            _path_text(_strip_path_and_ext(note.file_path) if use_basename else note.file_path),
+            file_size,
+            modified,
+            accessed,
+        )
+
+    header = Text(f"Vault Index ({vault_index.metadata.total_files} files)", style="bold cyan")
+    return Group(header, "", table)
 
 
 @main.command("show")
