@@ -400,7 +400,7 @@ wheels = [
 
 [[package]]
 name = "matterify"
-version = "0.6.1"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -408,9 +408,9 @@ dependencies = [
     { name = "rich" },
     { name = "structlog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0a/81/b886dda8b82dc11f5bf92d47da3dc7f817520ab25be8ff913780a98a66dc/matterify-0.6.1.tar.gz", hash = "sha256:6bbac80694a881bfb586d7981f5f33fae37f9767fa7ece14008503552977b90f", size = 61176, upload-time = "2026-04-11T11:46:00.595Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/78/c97bd6bd3f3553ba8b07966cb388ec7d379b30e88cf5d9c54924c2943ff1/matterify-0.7.0.tar.gz", hash = "sha256:86a4fc3cc14d65be0f5b19153572d9f06e19c1be8b2e2f1b06bcc3bf49c7a7b5", size = 61980, upload-time = "2026-04-11T12:36:39.226Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/06/4f3b71f7fe8a321320653a5675c6ba4cc57a874ab590f7d6c877290658c4/matterify-0.6.1-py3-none-any.whl", hash = "sha256:f1338702e58e04ccfa0eb7bc47343f2786a2295e84b0a1469d249fd655166668", size = 13711, upload-time = "2026-04-11T11:45:59.132Z" },
+    { url = "https://files.pythonhosted.org/packages/33/45/e3079c00aa121e4707224d7aff67accfa5ce39d098db629e20497d142f81/matterify-0.7.0-py3-none-any.whl", hash = "sha256:dce171c463e646b4358d97da74c9b030d92ab888bc6e2a0bec3099cc8fd1f5b5", size = 15187, upload-time = "2026-04-11T12:36:37.713Z" },
 ]
 
 [[package]]
@@ -815,15 +815,15 @@ wheels = [
 
 [[package]]
 name = "rich"
-version = "14.3.3"
+version = "14.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b3/c6/f3b320c27991c46f43ee9d856302c70dc2d0fb2dba4842ff739d5f46b393/rich-14.3.3.tar.gz", hash = "sha256:b8daa0b9e4eef54dd8cf7c86c03713f53241884e814f4e2f5fb342fe520f639b", size = 230582, upload-time = "2026-02-19T17:23:12.474Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e9/67/cae617f1351490c25a4b8ac3b8b63a4dda609295d8222bad12242dfdc629/rich-14.3.4.tar.gz", hash = "sha256:817e02727f2b25b40ef56f5aa2217f400c8489f79ca8f46ea2b70dd5e14558a9", size = 230524, upload-time = "2026-04-11T02:57:45.419Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/25/b208c5683343959b670dc001595f2f3737e051da617f66c31f7c4fa93abc/rich-14.3.3-py3-none-any.whl", hash = "sha256:793431c1f8619afa7d3b52b2cdec859562b950ea0d4b6b505397612db8d5362d", size = 310458, upload-time = "2026-02-19T17:23:13.732Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/76/6d163cfac87b632216f71879e6b2cf17163f773ff59c00b5ff4900a80fa3/rich-14.3.4-py3-none-any.whl", hash = "sha256:07e7adb4690f68864777b1450859253bed81a99a31ac321ac1817b2313558952", size = 310480, upload-time = "2026-04-11T02:57:47.484Z" },
 ]
 
 [[package]]
@@ -933,7 +933,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.3.2" },
-    { name = "matterify", specifier = "==0.6.1" },
+    { name = "matterify", specifier = "==0.7.0" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.0" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.0" },
