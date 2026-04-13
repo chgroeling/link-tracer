@@ -12,6 +12,7 @@ import click
 import structlog
 from rich.console import Console
 
+from vault_net import __version__
 from vault_net.application import (
     get_full_graph,
     scan_vault,
@@ -91,6 +92,7 @@ def main() -> None:
 
 
 @main.command("note-graph")
+@click.version_option(version=__version__)
 @click.argument("note_input", type=str)
 @click.option(
     "--vault-root",
@@ -216,6 +218,7 @@ def note_graph(
 
 
 @main.command("index")
+@click.version_option(version=__version__)
 @click.option(
     "--vault-root",
     type=click.Path(path_type=Path),
@@ -292,6 +295,7 @@ def index_cmd(
 
 
 @main.command("graph")
+@click.version_option(version=__version__)
 @click.option(
     "--vault-root",
     type=click.Path(path_type=Path),
@@ -386,6 +390,7 @@ def graph_cmd(
 
 
 @main.command("show")
+@click.version_option(version=__version__)
 @click.argument("note_input", type=str)
 @click.option(
     "--vault-root",
