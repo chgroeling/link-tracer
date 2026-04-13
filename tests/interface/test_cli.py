@@ -44,12 +44,7 @@ def test_note_graph_uses_slug_argument(tmp_path: Path) -> None:
     payload = json.loads(result.output)
     assert payload["vault_root"] == str(vault)
     assert payload["metadata"]["edge_count"] == 1
-    assert payload["edges"] == [
-        [
-            {"slug": "home.md-", "file_path": "home.md"},
-            {"slug": "about.md", "file_path": "about.md"},
-        ]
-    ]
+    assert payload["edges"] == [["home.md-", "home.md", "about.md", "about.md"]]
 
 
 def test_note_graph_unknown_slug_returns_usage_error(tmp_path: Path) -> None:
@@ -138,7 +133,11 @@ def test_graph_command_json_edge_list(tmp_path: Path) -> None:
     assert payload["vault_root"] == str(vault)
     assert payload["metadata"]["edge_count"] >= 1
     assert payload["edges"]
-    assert "slug" in payload["edges"][0][0]
+    assert len(payload["edges"][0]) == 4
+    assert isinstance(payload["edges"][0][0], str)
+    assert isinstance(payload["edges"][0][1], str)
+    assert isinstance(payload["edges"][0][2], str)
+    assert isinstance(payload["edges"][0][3], str)
 
 
 def test_graph_command_style_adjacency_list(tmp_path: Path) -> None:

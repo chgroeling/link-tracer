@@ -170,13 +170,14 @@ def _serialize_layered_repr(
 
 
 def _serialize_edge_list(graph: VaultGraph, vault_registry: VaultRegistry) -> dict[str, object]:
-    from dataclasses import asdict
-
     edges = build_vault_edge_list(graph, vault_registry)
     return {
         "vault_root": str(graph.vault_root),
         "metadata": {"edge_count": len(edges)},
-        "edges": [[asdict(source), asdict(target)] for source, target in edges],
+        "edges": [
+            [source.slug, source.file_path, target.slug, target.file_path]
+            for source, target in edges
+        ],
     }
 
 
@@ -198,15 +199,15 @@ def _render_edge_list_table(
 ) -> Table:
     table = Table(show_header=True, header_style="bold", box=None)
     table.add_column("Src Slug", no_wrap=True, min_width=8)
+    table.add_column("Src Path", no_wrap=True, max_width=50)
     table.add_column("Tgt Slug", no_wrap=True, min_width=8)
-    table.add_column("Source Name" if use_basename else "Source Path", no_wrap=True, max_width=50)
-    table.add_column("Target Name" if use_basename else "Target Path", no_wrap=True, max_width=50)
+    table.add_column("Tgt Path", no_wrap=True, max_width=50)
 
     for source, target in build_vault_edge_list(graph, vault_registry):
         table.add_row(
             _slug_text(source.slug),
-            _slug_text(target.slug),
             _path_text(_strip_path_and_ext(source.file_path) if use_basename else source.file_path),
+            _slug_text(target.slug),
             _path_text(_strip_path_and_ext(target.file_path) if use_basename else target.file_path),
         )
 
@@ -219,7 +220,7 @@ def _render_adjacency_list_table(
     table = Table(show_header=True, header_style="bold", box=None)
     table.add_column("Slug", no_wrap=True, min_width=8)
     table.add_column("Name" if use_basename else "Path", no_wrap=True, max_width=50)
-    table.add_column("Targets", no_wrap=True, max_width=30)
+    table.add_column("Targets", no_wrap=False)
 
     for source_slug in sorted(graph.digraph.nodes()):
         source_note = vault_registry.get_file(str(source_slug))
