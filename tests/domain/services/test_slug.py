@@ -44,7 +44,7 @@ def test_generate_slug_first_duplicate_gets_suffix() -> None:
     first = generate_slug("note", slug_counts)
     second = generate_slug("note", slug_counts)
     assert first == "NOTE____"
-    assert second == "NOTE0___"
+    assert second == "NOTE___0"
     assert len(first) == 8
     assert len(second) == 8
 
@@ -54,7 +54,7 @@ def test_generate_slug_second_duplicate_gets_incremented_suffix() -> None:
     slug_counts: dict[str, int] = {}
     generate_slug("note", slug_counts)
     third = generate_slug("note", slug_counts)
-    assert third == "NOTE0___"
+    assert third == "NOTE___0"
     assert len(third) == 8
 
 
@@ -83,8 +83,8 @@ def test_generate_slug_updates_counts_for_tracking() -> None:
     slug_counts: dict[str, int] = {}
     generate_slug("note", slug_counts)
     generate_slug("note", slug_counts)
-    assert slug_counts["NOTE"] == 1
-    assert "NOTE" in slug_counts
+    assert slug_counts["NOTE____"] == 1
+    assert "NOTE____" in slug_counts
 
 
 def test_generate_slug_handles_reserved_suffix_collision() -> None:
@@ -134,3 +134,36 @@ def test_generate_slug_short_filename_pads_to_8() -> None:
     assert generate_slug("ab.md", slug_counts) == "AB_MD___"
     assert generate_slug("a.md", slug_counts) == "A_MD____"
     assert generate_slug("abc.md", slug_counts) == "ABC_MD__"
+
+
+def test_generate_slug_padding_collision_note_vs_note_underscore() -> None:
+    """Filenames 'note' and 'note_' must produce distinct slugs after padding."""
+    slug_counts: dict[str, int] = {}
+    first = generate_slug("note", slug_counts)
+    second = generate_slug("note_", slug_counts)
+    assert first != second
+    assert len(first) == 8
+    assert len(second) == 8
+
+
+def test_generate_slug_padding_collision_trailing_underscores() -> None:
+    """Filenames differing only by trailing underscores must produce unique slugs."""
+    slug_counts: dict[str, int] = {}
+    slugs = [
+        generate_slug("note", slug_counts),
+        generate_slug("note_", slug_counts),
+        generate_slug("note__", slug_counts),
+        generate_slug("note___", slug_counts),
+        generate_slug("note____", slug_counts),
+    ]
+    assert len(slugs) == len(set(slugs)), f"Duplicate slugs found: {slugs}"
+
+
+def test_generate_slug_padding_collision_special_char_variants() -> None:
+    """Filenames that differ only by a char replaced with '_' must produce unique slugs."""
+    slug_counts: dict[str, int] = {}
+    first = generate_slug("note.md", slug_counts)
+    second = generate_slug("note_md", slug_counts)
+    assert first != second, f"Both produced {first}"
+    assert len(first) == 8
+    assert len(second) == 8
