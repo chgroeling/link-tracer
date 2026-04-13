@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from matterify.enums import FileError, FileStatus
+
 SAMPLE_NOTES: dict[str, str] = {
     "home.md": """\
 ---
@@ -185,8 +187,8 @@ class FakeFileStats:
 class FakeFileEntry:
     file_path: str = "note.md"
     frontmatter: dict[str, object] = field(default_factory=dict)
-    status: str = "ok"
-    error: str | None = None
+    status: FileStatus = FileStatus.OK
+    error: FileError | None = None
     stats: object = field(default_factory=FakeFileStats)
     file_hash: str = "deadbeef"
     custom_data: object | None = None

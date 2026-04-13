@@ -70,8 +70,8 @@ def _convert_scan_to_index(
         note = VaultNote(
             file_path=file_path_str,
             frontmatter=entry.frontmatter,
-            status=entry.status,
-            error=entry.error,
+            status=entry.status.value,
+            error=entry.error.value if entry.error else None,
             stats=VaultFileStats(
                 file_size=entry_stats.file_size,
                 modified_time=entry_stats.modified_time,
