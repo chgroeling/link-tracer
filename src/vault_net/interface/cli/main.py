@@ -428,6 +428,11 @@ def graph_cmd(
     is_flag=True,
     help="Show only filenames without path or extension in pretty output",
 )
+@click.option(
+    "--no-content",
+    is_flag=True,
+    help="Suppress loading and displaying file content",
+)
 def show_cmd(
     note_input: str,
     vault_root: Path | None,
@@ -438,6 +443,7 @@ def show_cmd(
     extra_exclude: tuple[str, ...],
     no_default_excludes: bool,
     basename: bool,
+    no_content: bool,
 ) -> int:
     """Show detailed information about a note including forward and backward links."""
     configure_debug_logging(debug)
@@ -457,6 +463,7 @@ def show_cmd(
             note_input,
             extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,
+            include_content=not no_content,
         )
     except KeyError as exc:
         raise click.UsageError(f"Unknown slug '{note_input}'.") from exc

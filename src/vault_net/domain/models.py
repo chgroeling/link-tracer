@@ -114,6 +114,7 @@ class NoteShow:
     note: VaultNote
     forward_links: list[VaultFile]
     backward_links: list[VaultFile]
+    content: str | None = None
 
 
 class InputError(Exception):

@@ -32,6 +32,7 @@ class ShowNoteUseCase:
         *,
         extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
+        include_content: bool = True,
     ) -> NoteShow:
         """Scan vault, build graph, and show note details with links."""
         start = time.monotonic()
@@ -88,8 +89,21 @@ class ShowNoteUseCase:
             backward_link_count=len(backward_links),
         )
 
+        content = _read_file_content(vault_root, source_note.file_path) if include_content else None
+
         return NoteShow(
             note=source_note,
             forward_links=forward_links,
             backward_links=backward_links,
+            content=content,
         )
+
+
+def _read_file_content(vault_root: Path, file_path: str) -> str | None:
+    """Read the text content of a vault file, return None on failure."""
+    full_path = vault_root / file_path
+    try:
+        return full_path.read_text(encoding="utf-8")
+    except OSError:
+        logger.warning("show_note.read_content_failed", path=str(full_path))
+        return None

@@ -86,6 +86,7 @@ def show_note(
     *,
     extra_exclude: tuple[str, ...] = (),
     no_default_excludes: bool = False,
+    include_content: bool = True,
 ) -> NoteShow:
     """Show detailed information about a note including its links."""
     use_case = ShowNoteUseCase(
@@ -97,4 +98,5 @@ def show_note(
         note_input,
         extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
+        include_content=include_content,
     )

@@ -5,8 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, cast
 
-from rich.console import Group
+from rich.console import Group, RenderableType
 from rich.padding import Padding
+from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
@@ -128,11 +129,14 @@ def build_note_show(note_show: NoteShow) -> dict[str, object]:
     """Serialize a NoteShow result into a JSON-friendly dictionary."""
     from dataclasses import asdict
 
-    return {
+    result: dict[str, object] = {
         "note": asdict(note_show.note),
         "forward_links": [asdict(f) for f in note_show.forward_links],
         "backward_links": [asdict(b) for b in note_show.backward_links],
     }
+    if note_show.content is not None:
+        result["content"] = note_show.content
+    return result
 
 
 def _serialize_layered_repr(
@@ -325,7 +329,8 @@ def _render_note_show_table(note_show: NoteShow, use_basename: bool = False) -> 
     forward_header = Text(f"Forward Links ({len(note_show.forward_links)})", style="bold cyan")
     backward_header = Text(f"Backward Links ({len(note_show.backward_links)})", style="bold cyan")
 
-    return Group(
+    sections: list[RenderableType] = [
+        Rule(style="dim"),
         info_header,
         Padding(info_table, (0, 0, 0, 1)),
         "",
@@ -334,7 +339,13 @@ def _render_note_show_table(note_show: NoteShow, use_basename: bool = False) -> 
         "",
         backward_header,
         backward_table if note_show.backward_links else Text(" None", style="dim"),
-    )
+    ]
+
+    sections.append(Rule(style="dim"))
+    if note_show.content is not None:
+        sections.append(Text(note_show.content))
+
+    return Group(*sections)
 
 
 def _render_index_table(vault_index: VaultIndex, use_basename: bool = False) -> Group:

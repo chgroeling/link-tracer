@@ -144,6 +144,77 @@ class TestShowNoteUseCase:
         assert len(result.backward_links) == 1
         assert result.backward_links[0].slug == "backward-slug"
 
+    def test_execute_includes_file_content(self, tmp_path: Path) -> None:
+        """Verify the note file content is read and included in the result."""
+        note_file = tmp_path / "note.md"
+        note_file.write_text("# Hello\nSome content here.", encoding="utf-8")
+
+        mock_scanner = MagicMock()
+        mock_graph_builder = MagicMock()
+
+        mock_vault_index = MagicMock(spec=VaultIndex)
+        mock_note_links = MagicMock()
+        mock_full_graph = MagicMock(spec=VaultGraph)
+        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_graph_builder.build_full_graph.return_value = mock_full_graph
+
+        use_case = ShowNoteUseCase(
+            scanner=mock_scanner,
+            graph_builder=mock_graph_builder,
+        )
+
+        with patch("vault_net.application.use_cases.show_note.VaultRegistry") as MockRegistry:
+            mock_registry = MagicMock()
+            mock_registry.resolve_to_slug.return_value = "note"
+
+            source_note = MagicMock(spec=VaultNote)
+            source_note.slug = "note"
+            source_note.file_path = "note.md"
+            mock_registry.get_file.return_value = source_note
+
+            MockRegistry.return_value = mock_registry
+
+            mock_full_graph.digraph.successors.return_value = []
+            mock_full_graph.digraph.predecessors.return_value = []
+
+            result = use_case.execute(vault_root=tmp_path, note_input="note")
+
+        assert result.content == "# Hello\nSome content here."
+
+    def test_execute_returns_none_content_when_file_missing(self, tmp_path: Path) -> None:
+        """Content is None when the file cannot be read."""
+        mock_scanner = MagicMock()
+        mock_graph_builder = MagicMock()
+
+        mock_vault_index = MagicMock(spec=VaultIndex)
+        mock_note_links = MagicMock()
+        mock_full_graph = MagicMock(spec=VaultGraph)
+        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_graph_builder.build_full_graph.return_value = mock_full_graph
+
+        use_case = ShowNoteUseCase(
+            scanner=mock_scanner,
+            graph_builder=mock_graph_builder,
+        )
+
+        with patch("vault_net.application.use_cases.show_note.VaultRegistry") as MockRegistry:
+            mock_registry = MagicMock()
+            mock_registry.resolve_to_slug.return_value = "missing"
+
+            source_note = MagicMock(spec=VaultNote)
+            source_note.slug = "missing"
+            source_note.file_path = "nonexistent.md"
+            mock_registry.get_file.return_value = source_note
+
+            MockRegistry.return_value = mock_registry
+
+            mock_full_graph.digraph.successors.return_value = []
+            mock_full_graph.digraph.predecessors.return_value = []
+
+            result = use_case.execute(vault_root=tmp_path, note_input="missing")
+
+        assert result.content is None
+
     def test_execute_passes_unknown_slug_error_upstream(self, tmp_path: Path) -> None:
         """KeyError when slug cannot be resolved is propagated."""
         mock_scanner = MagicMock()
