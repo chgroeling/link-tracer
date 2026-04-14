@@ -14,6 +14,7 @@ from rich.console import Console
 
 from vault_net import __version__
 from vault_net.application import (
+    create_note,
     get_full_graph,
     scan_vault,
     show_note,
@@ -481,4 +482,58 @@ def show_cmd(
 
     console.print("Note show complete")
     logger.info("note.show.complete")
+    return 0
+
+
+@main.command("create")
+@click.version_option(version=__version__)
+@click.argument("name", type=str)
+@click.option(
+    "--vault-root",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Vault root directory (overrides VAULT_ROOT env and .vault file)",
+)
+@click.option(
+    "-c",
+    "--content",
+    type=str,
+    default="",
+    help="Text content to write into the new note",
+)
+@click.option("--debug", is_flag=True, help="Enable debug-level structured logging to stderr")
+@click.option("--verbose", is_flag=True, help="Enable verbose console output")
+def create_cmd(
+    name: str,
+    vault_root: Path | None,
+    content: str,
+    debug: bool,
+    verbose: bool,
+) -> int:
+    """Create a new note in the vault.
+
+    NAME is the note path relative to the vault root (e.g. "sub/dir/my-note").
+    A .md extension is appended automatically when missing.
+    """
+    configure_debug_logging(debug)
+    console = get_console(verbose)
+
+    logger.debug(
+        "starting.create_note",
+        name=name,
+        vault_root=str(vault_root) if vault_root else None,
+    )
+    vault_root = resolve_vault_root(vault_root)
+    logger.info("creating.note", name=name)
+
+    try:
+        slug = create_note(vault_root, name, content=content)
+    except FileExistsError as exc:
+        raise click.UsageError(str(exc)) from exc
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+    click.echo(slug)
+    console.print("Note created")
+    logger.info("note.created", slug=slug)
     return 0

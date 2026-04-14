@@ -359,3 +359,53 @@ def test_trace_basename_adjacency_style(tmp_path: Path) -> None:
     assert "home" in result.output
     assert "about" in result.output
     assert str(vault) not in result.output
+
+
+def test_create_creates_note_and_outputs_slug(tmp_path: Path) -> None:
+    """create writes a .md file and echoes its slug."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["create", "hello", "--vault-root", str(vault)])
+
+    assert result.exit_code == 0
+    assert (vault / "hello.md").exists()
+    assert result.output.strip().startswith("HELLO___")
+
+
+def test_create_with_subdirectory(tmp_path: Path) -> None:
+    """create supports subdirectories in the note name."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["create", "sub/dir/note", "--vault-root", str(vault)])
+
+    assert result.exit_code == 0
+    assert (vault / "sub" / "dir" / "note.md").exists()
+
+
+def test_create_with_content(tmp_path: Path) -> None:
+    """create writes user-supplied content into the note."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["create", "note", "--vault-root", str(vault), "-c", "# Title"])
+
+    assert result.exit_code == 0
+    assert (vault / "note.md").read_text(encoding="utf-8") == "# Title"
+
+
+def test_create_duplicate_returns_error(tmp_path: Path) -> None:
+    """create fails when the target note already exists."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "dup.md").write_text("existing", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["create", "dup", "--vault-root", str(vault)])
+
+    assert result.exit_code != 0
+    assert "already exists" in result.output

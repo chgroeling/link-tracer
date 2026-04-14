@@ -17,8 +17,7 @@ def generate_slug(filename: str, slug_counts: dict[str, int]) -> str:
     while slug in slug_counts:
         if count >= max_count:
             raise ValueError(
-                f"Slug namespace exhausted for base '{base_slug}': "
-                f"all {max_count} slots are taken"
+                f"Slug namespace exhausted for base '{base_slug}': all {max_count} slots are taken"
             )
         suffix = f"{count}"
         shortened_len = max(1, SLUG_LENGTH - len(suffix))

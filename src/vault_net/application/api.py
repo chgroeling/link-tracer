@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 from vault_net.application.use_cases.build_full_graph import BuildFullGraphUseCase
 from vault_net.application.use_cases.build_neighborhood_graph import BuildNeighborhoodGraphUseCase
+from vault_net.application.use_cases.create_note import CreateNoteUseCase
 from vault_net.application.use_cases.scan_vault import ScanVaultUseCase
 from vault_net.application.use_cases.show_note import ShowNoteUseCase
 from vault_net.application.use_cases.trace_note_links import TraceNoteLinksUseCase
@@ -78,6 +79,17 @@ def trace_note_links(
         extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
     )
+
+
+def create_note(
+    vault_root: Path,
+    name: str,
+    *,
+    content: str = "",
+) -> str:
+    """Create a new note in the vault and return its slug."""
+    use_case = CreateNoteUseCase()
+    return use_case.execute(vault_root, name, content=content)
 
 
 def show_note(

@@ -1,6 +1,7 @@
 """Application layer: orchestrated use cases."""
 
 from vault_net.application.api import (
+    create_note,
     get_full_graph,
     get_neighborhood_graph,
     scan_vault,
@@ -9,6 +10,7 @@ from vault_net.application.api import (
 )
 
 __all__ = [
+    "create_note",
     "get_full_graph",
     "get_neighborhood_graph",
     "scan_vault",
