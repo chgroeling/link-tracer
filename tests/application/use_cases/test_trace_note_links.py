@@ -26,7 +26,7 @@ class TestTraceNoteLinksUseCase:
         mock_full_graph = MagicMock(spec=VaultGraph)
         mock_neighborhood_graph = MagicMock(spec=VaultGraph)
 
-        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_scanner.index_files.return_value = (mock_vault_index, mock_note_links)
         mock_graph_builder.build_full_graph.return_value = mock_full_graph
         mock_graph_builder.build_neighborhood_graph.return_value = mock_neighborhood_graph
 
@@ -50,7 +50,7 @@ class TestTraceNoteLinksUseCase:
                 no_default_excludes=True,
             )
 
-        mock_scanner.scan.assert_called_once_with(
+        mock_scanner.index_files.assert_called_once_with(
             tmp_path,
             extra_exclude=("excluded",),
             no_default_excludes=True,
@@ -76,7 +76,7 @@ class TestTraceNoteLinksUseCase:
         mock_note_links = MagicMock()
         mock_full_graph = MagicMock(spec=VaultGraph)
 
-        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_scanner.index_files.return_value = (mock_vault_index, mock_note_links)
         mock_graph_builder.build_full_graph.return_value = mock_full_graph
         mock_graph_builder.build_neighborhood_graph.side_effect = KeyError("unknown-slug")
 

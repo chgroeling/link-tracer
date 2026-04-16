@@ -23,7 +23,7 @@ class TestShowNoteUseCase:
         mock_note_links = MagicMock()
         mock_full_graph = MagicMock(spec=VaultGraph)
 
-        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_scanner.index_files.return_value = (mock_vault_index, mock_note_links)
         mock_graph_builder.build_full_graph.return_value = mock_full_graph
 
         use_case = ShowNoteUseCase(
@@ -62,7 +62,7 @@ class TestShowNoteUseCase:
                 no_default_excludes=True,
             )
 
-        mock_scanner.scan.assert_called_once_with(
+        mock_scanner.index_files.assert_called_once_with(
             tmp_path,
             extra_exclude=("excluded",),
             no_default_excludes=True,
@@ -82,7 +82,7 @@ class TestShowNoteUseCase:
         mock_vault_index = MagicMock(spec=VaultIndex)
         mock_note_links = MagicMock()
         mock_full_graph = MagicMock(spec=VaultGraph)
-        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_scanner.index_files.return_value = (mock_vault_index, mock_note_links)
         mock_graph_builder.build_full_graph.return_value = mock_full_graph
 
         use_case = ShowNoteUseCase(
@@ -155,7 +155,7 @@ class TestShowNoteUseCase:
         mock_vault_index = MagicMock(spec=VaultIndex)
         mock_note_links = MagicMock()
         mock_full_graph = MagicMock(spec=VaultGraph)
-        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_scanner.index_files.return_value = (mock_vault_index, mock_note_links)
         mock_graph_builder.build_full_graph.return_value = mock_full_graph
 
         use_case = ShowNoteUseCase(
@@ -189,7 +189,7 @@ class TestShowNoteUseCase:
         mock_vault_index = MagicMock(spec=VaultIndex)
         mock_note_links = MagicMock()
         mock_full_graph = MagicMock(spec=VaultGraph)
-        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_scanner.index_files.return_value = (mock_vault_index, mock_note_links)
         mock_graph_builder.build_full_graph.return_value = mock_full_graph
 
         use_case = ShowNoteUseCase(
@@ -222,7 +222,7 @@ class TestShowNoteUseCase:
 
         mock_vault_index = MagicMock(spec=VaultIndex)
         mock_note_links = MagicMock()
-        mock_scanner.scan.return_value = (mock_vault_index, mock_note_links)
+        mock_scanner.index_files.return_value = (mock_vault_index, mock_note_links)
 
         use_case = ShowNoteUseCase(
             scanner=mock_scanner,

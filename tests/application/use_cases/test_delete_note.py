@@ -21,7 +21,7 @@ def _make_use_case(
 ) -> DeleteNoteUseCase:
     listing = VaultListing(vault_root=vault_root, files=notes)
     scanner = MagicMock()
-    scanner.index_files.return_value = listing
+    scanner.list_files.return_value = listing
     return DeleteNoteUseCase(scanner=scanner)
 
 
@@ -83,7 +83,7 @@ class TestDeleteNoteUseCase:
             no_default_excludes=True,
         )
 
-        use_case._scanner.index_files.assert_called_once_with(
+        use_case._scanner.list_files.assert_called_once_with(
             tmp_path,
             extra_exclude=("*.tmp",),
             no_default_excludes=True,

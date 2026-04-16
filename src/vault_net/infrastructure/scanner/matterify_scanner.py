@@ -109,14 +109,14 @@ def _convert_scan_to_listing(
 class MatterifyVaultScanner:
     """Scanner adapter that uses matterify and obsilink."""
 
-    def scan(
+    def index_files(
         self,
         vault_root: Path,
         *,
         extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
-        """Scan vault directory and build a domain index with note links.
+        """Index vault directory and build a domain index with note links.
 
         Args:
             vault_root: Root directory of the vault to scan.
@@ -128,7 +128,7 @@ class MatterifyVaultScanner:
                 (e.g., "**/.git", "**/.obsidian").
         """
         start = time.monotonic()
-        logger.debug("scan_vault.start", vault_root=str(vault_root))
+        logger.debug("index_files.start", vault_root=str(vault_root))
 
         base = () if no_default_excludes else DEFAULT_EXCLUDE_PATTERNS
         scan_result = scan_directory(
@@ -143,22 +143,22 @@ class MatterifyVaultScanner:
         index, note_links = _convert_scan_to_index(vault_root, scan_result)
         duration = time.monotonic() - start
         logger.debug(
-            "scan_vault.complete",
+            "index_files.complete",
             duration=round(duration, 4),
             file_count=len(index.files),
         )
         return index, note_links
 
-    def index_files(
+    def list_files(
         self,
         vault_root: Path,
         *,
         extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
     ) -> VaultListing:
-        """Index vault files into a lightweight listing of slugs and paths."""
+        """List vault files as a lightweight listing of slugs and paths."""
         start = time.monotonic()
-        logger.debug("index_files.start", vault_root=str(vault_root))
+        logger.debug("list_files.start", vault_root=str(vault_root))
 
         base = () if no_default_excludes else DEFAULT_EXCLUDE_PATTERNS
         scan_result = scan_directory(
@@ -173,7 +173,7 @@ class MatterifyVaultScanner:
         listing = _convert_scan_to_listing(vault_root, scan_result)
         duration = time.monotonic() - start
         logger.debug(
-            "index_files.complete",
+            "list_files.complete",
             duration=round(duration, 4),
             file_count=len(listing.files),
         )

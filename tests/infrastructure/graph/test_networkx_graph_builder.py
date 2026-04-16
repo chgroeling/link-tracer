@@ -41,7 +41,7 @@ def test_build_full_graph_resolves_known_links_only(tmp_path: Path) -> None:
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    vault_index, note_links = scanner.scan(vault_root)
+    vault_index, note_links = scanner.index_files(vault_root)
     vault_graph = graph_builder.build_full_graph(vault_index, note_links)
     home_slug = _slug_for(vault_index, "home.md")
     about_slug = _slug_for(vault_index, "about.md")
@@ -64,7 +64,7 @@ def test_build_full_graph_includes_isolated_notes(tmp_path: Path) -> None:
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    vault_index, note_links = scanner.scan(vault_root)
+    vault_index, note_links = scanner.index_files(vault_root)
     vault_graph = graph_builder.build_full_graph(vault_index, note_links)
     home_slug = _slug_for(vault_index, "home.md")
     about_slug = _slug_for(vault_index, "about.md")
@@ -85,7 +85,7 @@ def test_build_full_graph_skips_self_loops_and_deduplicates_edges(tmp_path: Path
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    vault_index, note_links = scanner.scan(vault_root)
+    vault_index, note_links = scanner.index_files(vault_root)
     vault_graph = graph_builder.build_full_graph(vault_index, note_links)
     home_slug = _slug_for(vault_index, "home.md")
     about_slug = _slug_for(vault_index, "about.md")
@@ -102,7 +102,7 @@ def test_build_neighborhood_graph_rejects_negative_depth(tmp_path: Path) -> None
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    vault_index, note_links = scanner.scan(vault_root)
+    vault_index, note_links = scanner.index_files(vault_root)
     graph = graph_builder.build_full_graph(vault_index, note_links)
     a_slug = _slug_for(vault_index, "a.md")
     with pytest.raises(ValueError, match="depth must be >= 0"):
@@ -117,7 +117,7 @@ def test_build_neighborhood_graph_requires_known_slug(tmp_path: Path) -> None:
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    vault_index, note_links = scanner.scan(vault_root)
+    vault_index, note_links = scanner.index_files(vault_root)
     graph = graph_builder.build_full_graph(vault_index, note_links)
     with pytest.raises(KeyError):
         graph_builder.build_neighborhood_graph("missing_", graph, depth=1)
@@ -132,7 +132,7 @@ def test_build_neighborhood_graph_depth_zero_returns_source_only(tmp_path: Path)
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    vault_index, note_links = scanner.scan(vault_root)
+    vault_index, note_links = scanner.index_files(vault_root)
     graph = graph_builder.build_full_graph(vault_index, note_links)
     a_slug = _slug_for(vault_index, "a.md")
     ego = graph_builder.build_neighborhood_graph(a_slug, graph, depth=0).digraph
@@ -151,7 +151,7 @@ def test_build_neighborhood_graph_uses_undirected_neighborhood(tmp_path: Path) -
 
     scanner = MatterifyVaultScanner()
     graph_builder = NetworkXGraphBuilder()
-    vault_index, note_links = scanner.scan(vault_root)
+    vault_index, note_links = scanner.index_files(vault_root)
     graph = graph_builder.build_full_graph(vault_index, note_links)
     a_slug = _slug_for(vault_index, "a.md")
     b_slug = _slug_for(vault_index, "b.md")

@@ -26,7 +26,7 @@ def test_scanner_delegates_to_scan_directory() -> None:
         "vault_net.infrastructure.scanner.matterify_scanner.scan_directory",
         return_value=fake_result,
     ) as mock_scan:
-        vault_index, note_links = scanner.scan(vault_root)
+        vault_index, note_links = scanner.index_files(vault_root)
 
     assert isinstance(vault_index, VaultIndex)
     assert vault_index.vault_root == vault_root
@@ -62,7 +62,7 @@ def test_scanner_converts_custom_data_to_vault_links() -> None:
         "vault_net.infrastructure.scanner.matterify_scanner.scan_directory",
         return_value=fake_result,
     ):
-        vault_index, note_links = scanner.scan(vault_root)
+        vault_index, note_links = scanner.index_files(vault_root)
 
     note = vault_index.files[0]
     assert len(note_links[note.slug]) == 1

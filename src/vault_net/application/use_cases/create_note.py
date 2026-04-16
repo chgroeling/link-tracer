@@ -64,7 +64,7 @@ class CreateNoteUseCase:
         target.write_text(content, encoding="utf-8")
 
         # Quick scan to build accurate slug_counts from existing notes
-        listing = self._scanner.index_files(vault_root)
+        listing = self._scanner.list_files(vault_root)
         slug_counts: dict[str, int] = {f.slug: 0 for f in listing.files}
 
         stem = target.stem

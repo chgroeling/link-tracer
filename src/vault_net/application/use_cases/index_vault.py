@@ -33,7 +33,7 @@ class IndexVaultUseCase:
         start = time.monotonic()
         logger.debug("use_case.index_vault.start", vault_root=str(vault_root))
 
-        index, note_links = self._scanner.scan(
+        index, note_links = self._scanner.index_files(
             vault_root,
             extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,

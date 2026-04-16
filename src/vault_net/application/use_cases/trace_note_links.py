@@ -44,7 +44,7 @@ class TraceNoteLinksUseCase:
         )
 
         logger.debug("use_case.trace_note_links.step.scanning")
-        vault_index, note_links = self._scanner.scan(
+        vault_index, note_links = self._scanner.index_files(
             vault_root,
             extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,

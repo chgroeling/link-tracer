@@ -15,7 +15,7 @@ def _make_use_case(files: list[VaultFile] | None = None) -> CreateNoteUseCase:
     scanner = MagicMock()
     listing = MagicMock(spec=VaultListing)
     listing.files = files or []
-    scanner.index_files.return_value = listing
+    scanner.list_files.return_value = listing
     return CreateNoteUseCase(scanner=scanner)
 
 

@@ -38,23 +38,23 @@ class VaultDiGraph(Protocol):
 class VaultScanner(Protocol):
     """Port for scanning vault content into a domain index."""
 
-    def scan(
-        self,
-        vault_root: Path,
-        *,
-        extra_exclude: tuple[str, ...] = (),
-        no_default_excludes: bool = False,
-    ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
-        """Scan the vault and return a domain index with note links."""
-
     def index_files(
         self,
         vault_root: Path,
         *,
         extra_exclude: tuple[str, ...] = (),
         no_default_excludes: bool = False,
+    ) -> tuple[VaultIndex, dict[str, list[VaultLink]]]:
+        """Index the vault and return a domain index with note links."""
+
+    def list_files(
+        self,
+        vault_root: Path,
+        *,
+        extra_exclude: tuple[str, ...] = (),
+        no_default_excludes: bool = False,
     ) -> VaultListing:
-        """Index vault files into a lightweight listing of slugs and paths."""
+        """List vault files as a lightweight listing of slugs and paths."""
 
 
 class GraphBuilder(Protocol):

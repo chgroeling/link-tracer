@@ -43,7 +43,7 @@ class ShowNoteUseCase:
         )
 
         logger.debug("use_case.show_note.step.scanning")
-        vault_index, note_links = self._scanner.scan(
+        vault_index, note_links = self._scanner.index_files(
             vault_root,
             extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,

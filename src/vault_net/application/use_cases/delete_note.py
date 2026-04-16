@@ -47,7 +47,7 @@ class DeleteNoteUseCase:
         """
         logger.info("use_case.delete_note.start", note_input=note_input)
 
-        listing = self._scanner.index_files(
+        listing = self._scanner.list_files(
             vault_root,
             extra_exclude=extra_exclude,
             no_default_excludes=no_default_excludes,
