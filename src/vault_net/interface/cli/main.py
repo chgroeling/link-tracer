@@ -16,6 +16,7 @@ from rich.console import Console
 from vault_net import __version__
 from vault_net.application import (
     create_note,
+    delete_note,
     get_full_graph,
     scan_vault,
     show_note,
@@ -559,4 +560,80 @@ def create_cmd(
     click.echo(slug)
     console.print("Note created")
     logger.info("note.created", slug=slug)
+    return 0
+
+
+@main.command("delete")
+@click.version_option(version=__version__)
+@click.argument("note_input", type=str)
+@click.option(
+    "--vault-root",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Vault root directory (overrides VAULT_ROOT env and .vault file)",
+)
+@click.option(
+    "-f",
+    "--force",
+    is_flag=True,
+    help="Skip confirmation prompt and delete immediately",
+)
+@click.option("--debug", is_flag=True, help="Enable debug-level structured logging to stderr")
+@click.option("--verbose", is_flag=True, help="Enable verbose console output")
+@click.option(
+    "-e",
+    "--exclude",
+    "extra_exclude",
+    multiple=True,
+    metavar="GLOB",
+    help="Additional glob pattern to exclude from traversal (repeatable)",
+)
+@click.option(
+    "--no-default-excludes",
+    is_flag=True,
+    help="Disable built-in default exclusions; use only --exclude entries",
+)
+def delete_cmd(
+    note_input: str,
+    vault_root: Path | None,
+    force: bool,
+    debug: bool,
+    verbose: bool,
+    extra_exclude: tuple[str, ...],
+    no_default_excludes: bool,
+) -> int:
+    """Delete a note from the vault.
+
+    NOTE_INPUT is the note slug or file path relative to the vault root.
+    Requires confirmation unless --force is passed.
+    """
+    configure_debug_logging(debug)
+    console = get_console(verbose)
+
+    logger.debug(
+        "starting.delete_note",
+        note_input=note_input,
+        vault_root=str(vault_root) if vault_root else None,
+    )
+    vault_root = resolve_vault_root(vault_root)
+    logger.info("deleting.note", note_input=note_input)
+
+    if not force:
+        click.confirm(f"Delete note '{note_input}'?", abort=True)
+
+    try:
+        file_path = delete_note(
+            vault_root,
+            note_input,
+            extra_exclude=extra_exclude,
+            no_default_excludes=no_default_excludes,
+        )
+    except KeyError as exc:
+        raise click.UsageError(f"Unknown slug '{note_input}'.") from exc
+    except FileNotFoundError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+    click.echo(file_path)
+    console.print("Note deleted")
+    logger.info("note.deleted", file_path=file_path)
     return 0

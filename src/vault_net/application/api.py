@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 from vault_net.application.use_cases.build_full_graph import BuildFullGraphUseCase
 from vault_net.application.use_cases.build_neighborhood_graph import BuildNeighborhoodGraphUseCase
 from vault_net.application.use_cases.create_note import CreateNoteUseCase
+from vault_net.application.use_cases.delete_note import DeleteNoteUseCase
 from vault_net.application.use_cases.scan_vault import ScanVaultUseCase
 from vault_net.application.use_cases.show_note import ShowNoteUseCase
 from vault_net.application.use_cases.trace_note_links import TraceNoteLinksUseCase
@@ -112,4 +113,21 @@ def show_note(
         extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
         include_content=include_content,
+    )
+
+
+def delete_note(
+    vault_root: Path,
+    note_input: str,
+    *,
+    extra_exclude: tuple[str, ...] = (),
+    no_default_excludes: bool = False,
+) -> str:
+    """Delete a note from the vault and return its file path."""
+    use_case = DeleteNoteUseCase(scanner=MatterifyVaultScanner())
+    return use_case.execute(
+        vault_root,
+        note_input,
+        extra_exclude=extra_exclude,
+        no_default_excludes=no_default_excludes,
     )

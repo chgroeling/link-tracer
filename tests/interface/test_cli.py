@@ -471,3 +471,86 @@ def test_create_content_and_content_file_mutually_exclusive(tmp_path: Path) -> N
 
     assert result.exit_code != 0
     assert "mutually exclusive" in result.output
+
+
+def test_delete_removes_note_and_outputs_path(tmp_path: Path) -> None:
+    """delete removes a note file and echoes its relative path."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "doomed.md").write_text("bye", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["delete", "doomed.md", "--vault-root", str(vault), "--force"],
+    )
+
+    assert result.exit_code == 0
+    assert "doomed.md" in result.output
+    assert not (vault / "doomed.md").exists()
+
+
+def test_delete_prompts_for_confirmation(tmp_path: Path) -> None:
+    """delete asks for confirmation by default."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "ask.md").write_text("content", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["delete", "ask.md", "--vault-root", str(vault)],
+        input="y\n",
+    )
+
+    assert result.exit_code == 0
+    assert not (vault / "ask.md").exists()
+
+
+def test_delete_aborts_on_declined_confirmation(tmp_path: Path) -> None:
+    """delete aborts when user declines the confirmation prompt."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "keep.md").write_text("content", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["delete", "keep.md", "--vault-root", str(vault)],
+        input="n\n",
+    )
+
+    assert result.exit_code != 0
+    assert (vault / "keep.md").exists()
+
+
+def test_delete_unknown_slug_returns_error(tmp_path: Path) -> None:
+    """delete fails for an unknown slug."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "exists.md").write_text("", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["delete", "NOPE", "--vault-root", str(vault), "--force"],
+    )
+
+    assert result.exit_code != 0
+    assert "Unknown slug" in result.output
+
+
+def test_delete_force_skips_confirmation(tmp_path: Path) -> None:
+    """delete --force / -f skips the confirmation prompt."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "quick.md").write_text("gone", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["delete", "quick.md", "--vault-root", str(vault), "-f"],
+    )
+
+    assert result.exit_code == 0
+    assert not (vault / "quick.md").exists()
