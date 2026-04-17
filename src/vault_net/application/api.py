@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from vault_net.application.use_cases.move_note import MoveResult
     from vault_net.domain.models import (
         NoteLinkTrace,
         NoteShow,
@@ -20,6 +21,7 @@ from vault_net.application.use_cases.build_neighborhood_graph import BuildNeighb
 from vault_net.application.use_cases.create_note import CreateNoteUseCase
 from vault_net.application.use_cases.delete_note import DeleteNoteUseCase
 from vault_net.application.use_cases.index_vault import IndexVaultUseCase
+from vault_net.application.use_cases.move_note import MoveNoteUseCase
 from vault_net.application.use_cases.show_note import ShowNoteUseCase
 from vault_net.application.use_cases.trace_note_links import TraceNoteLinksUseCase
 from vault_net.infrastructure.graph.networkx_graph_builder import NetworkXGraphBuilder
@@ -128,6 +130,28 @@ def delete_note(
     return use_case.execute(
         vault_root,
         note_input,
+        extra_exclude=extra_exclude,
+        no_default_excludes=no_default_excludes,
+    )
+
+
+def move_note(
+    vault_root: Path,
+    note_input: str,
+    destination: str,
+    *,
+    extra_exclude: tuple[str, ...] = (),
+    no_default_excludes: bool = False,
+) -> MoveResult:
+    """Move a note to a new path and update backlinks."""
+    use_case = MoveNoteUseCase(
+        scanner=MatterifyVaultScanner(),
+        graph_builder=NetworkXGraphBuilder(),
+    )
+    return use_case.execute(
+        vault_root,
+        note_input,
+        destination,
         extra_exclude=extra_exclude,
         no_default_excludes=no_default_excludes,
     )

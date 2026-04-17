@@ -19,6 +19,7 @@ from vault_net.application import (
     delete_note,
     get_full_graph,
     index_vault,
+    move_note,
     show_note,
     trace_note_links,
 )
@@ -636,4 +637,87 @@ def delete_cmd(
     click.echo(file_path)
     console.print("Note deleted")
     logger.info("note.deleted", file_path=file_path)
+    return 0
+
+
+@main.command("move")
+@click.version_option(version=__version__)
+@click.argument("note_input", type=str)
+@click.argument("destination", type=str)
+@click.option(
+    "--vault-root",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Vault root directory (overrides VAULT_ROOT env and .vault file)",
+)
+@click.option("--debug", is_flag=True, help="Enable debug-level structured logging to stderr")
+@click.option("--verbose", is_flag=True, help="Enable verbose console output")
+@click.option(
+    "-e",
+    "--exclude",
+    "extra_exclude",
+    multiple=True,
+    metavar="GLOB",
+    help="Additional glob pattern to exclude from traversal (repeatable)",
+)
+@click.option(
+    "--no-default-excludes",
+    is_flag=True,
+    help="Disable built-in default exclusions; use only --exclude entries",
+)
+def move_cmd(
+    note_input: str,
+    destination: str,
+    vault_root: Path | None,
+    debug: bool,
+    verbose: bool,
+    extra_exclude: tuple[str, ...],
+    no_default_excludes: bool,
+) -> int:
+    """Move a note to a new path and update backlinks.
+
+    NOTE_INPUT is the note slug or file path relative to the vault root.
+    DESTINATION is the new relative path for the note (e.g. "sub/dir/new-name").
+    A .md extension is appended automatically when missing.
+    """
+    configure_debug_logging(debug)
+    console = get_console(verbose)
+
+    logger.debug(
+        "starting.move_note",
+        note_input=note_input,
+        destination=destination,
+        vault_root=str(vault_root) if vault_root else None,
+    )
+    vault_root = resolve_vault_root(vault_root)
+    logger.info("moving.note", note_input=note_input, destination=destination)
+
+    try:
+        result = move_note(
+            vault_root,
+            note_input,
+            destination,
+            extra_exclude=extra_exclude,
+            no_default_excludes=no_default_excludes,
+        )
+    except KeyError as exc:
+        raise click.UsageError(f"Unknown slug '{note_input}'.") from exc
+    except FileNotFoundError as exc:
+        raise click.UsageError(str(exc)) from exc
+    except FileExistsError as exc:
+        raise click.UsageError(str(exc)) from exc
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+    click.echo(f"{result.old_path} -> {result.new_path}")
+    if result.updated_files:
+        for f in result.updated_files:
+            click.echo(f"  updated: {f}")
+    console.print("Note moved")
+    logger.info(
+        "note.moved",
+        old_path=result.old_path,
+        new_path=result.new_path,
+        updated_files=result.updated_files,
+    )
     return 0

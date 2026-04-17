@@ -6,6 +6,7 @@ from vault_net.application.api import (
     get_full_graph,
     get_neighborhood_graph,
     index_vault,
+    move_note,
     show_note,
     trace_note_links,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "get_full_graph",
     "get_neighborhood_graph",
     "index_vault",
+    "move_note",
     "show_note",
     "trace_note_links",
 ]

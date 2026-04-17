@@ -1,0 +1,2 @@
+- [ ] show must also work with  relative pathes
+- [ ] first argument of move may be a slug
