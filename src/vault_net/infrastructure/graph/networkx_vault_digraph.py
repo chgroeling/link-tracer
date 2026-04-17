@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 import networkx as nx
 
 from vault_net.domain.protocols import VaultDiGraph  # noqa: TC001

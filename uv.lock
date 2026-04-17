@@ -624,11 +624,11 @@ wheels = [
 
 [[package]]
 name = "obsilink"
-version = "0.3.1"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/79/9d/8f78dedc1f5fdd2e66fa45d2114fad7d45504909d5e8b7681faa42422560/obsilink-0.3.1.tar.gz", hash = "sha256:8c591fa3fb95d779afea15bc5d2038d1497bc47e3c9536d643e379c2298728b9", size = 25824, upload-time = "2026-04-05T14:55:00.128Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/43/6610e0ddafbe480fadfba80eb460a89c3b382ef3c9126877cb768e620f0a/obsilink-0.4.0.tar.gz", hash = "sha256:78b811176f070871c9cdb739f5094a88b529dfa73258d61843ca575f35f25be7", size = 28002, upload-time = "2026-04-17T04:35:24.011Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/fa/10bc1cb4054f364e0831d5ff26cc969f0b3f0377a946585928bdf7279ffb/obsilink-0.3.1-py3-none-any.whl", hash = "sha256:d230c3794e35d399034216f5e8b78cff5acc716e7a3b7ce638bfa1131eaff9d4", size = 7819, upload-time = "2026-04-05T14:54:58.935Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/b5/540a426dc09b9800b4579231234a03afb72b7135200810fcd1967cf63f77/obsilink-0.4.0-py3-none-any.whl", hash = "sha256:bd6c71ffef55bb0dc9f44490044ca5f253464c49c393015967fd3a40030886d8", size = 9506, upload-time = "2026-04-17T04:35:22.753Z" },
 ]
 
 [[package]]
@@ -938,7 +938,7 @@ requires-dist = [
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.0" },
     { name = "networkx", specifier = ">=3.4.2" },
-    { name = "obsilink", specifier = ">=0.3.1" },
+    { name = "obsilink", specifier = ">=0.4.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
     { name = "rich", specifier = ">=14.3.3" },
