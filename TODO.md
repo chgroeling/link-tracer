@@ -1,2 +1,5 @@
 - [ ] show must also work with  relative pathes
 - [ ] first argument of move may be a slug
+- [ ] replace algorithmn move to domain
+- [ ] obsilink in infrastructure
+- [ ] be quiet without verbose (see move, create)
